@@ -2482,7 +2482,7 @@ body.desktop .desktop-badge{display:inline-flex}
       z=Number(zoom.value);
     }
     if(!Number.isFinite(z)||z<=0)z=1;
-    z=Math.max(.05,z);
+    z=Math.max(.001,z);
     device.style.width=w+'px';
     device.style.height=h+'px';
     device.style.transform='scale('+z+')';
@@ -6049,7 +6049,7 @@ body.desktop .desktop-badge{display:inline-flex}
     selectedDeviceKind='custom';preset.value='custom';screenCustomW.value=customDeviceWidth.value=p.width;screenCustomH.value=customDeviceHeight.value=p.height;
     if(p.leftInset!=null)document.getElementById('androidLeftInset').value=p.leftInset;if(p.rightInset!=null)document.getElementById('androidRightInset').value=p.rightInset;if(p.topInset!=null)document.getElementById('androidTopInset').value=p.topInset;if(p.bottomInset!=null)document.getElementById('androidBottomInset').value=p.bottomInset;
     document.getElementById('androidGeometryStatus').textContent=label+' · '+p.width+' × '+p.height+' px CSS · haut '+document.getElementById('androidTopInset').value+' · bas '+document.getElementById('androidBottomInset').value+(p.bottomInset==null?' · barre du bas à confirmer':'');
-    setDevice();setPreviewMode('android');scheduleRecovery();
+    setDevice();window.StudioWorkspace?.useScreenProfile(p);setPreviewMode('android');scheduleRecovery();
   }
   document.getElementById('measureAndroidBtn').addEventListener('click',async()=>{var r=await desktop.androidGeometry();if(!r.ok){document.getElementById('androidGeometryStatus').textContent=r.error;return}applyAndroidGeometry(r.profile,'Mesures Android '+r.serial)});
   document.getElementById('calibrateScreenshotBtn').addEventListener('click',async()=>{var r=await desktop.pickReferenceImage();if(r?.ok)window.AndroidScreenCalibration.open(r.dataUrl,p=>{applyAndroidGeometry(p,'Calibré sur la capture');setReferenceImage(r.dataUrl,'Capture utilisée pour la géométrie')},currentDeviceSize().width)});
@@ -6171,7 +6171,7 @@ body.desktop .desktop-badge{display:inline-flex}
     frame.src=currentSource.url;
   }
 
-  window.StudioHost={getSource:()=>currentSource,loadSource,select:selector=>post('select-selector',{selector}),fitEditor:()=>{if(window.StudioWorkspace){zoom.value='fit';setDevice();}},context:()=>({selection:lastState,css:cssOut.value,source:currentSource})};
+  window.StudioHost={getSource:()=>currentSource,loadSource,select:selector=>post('select-selector',{selector}),setViewport:(width,height,kind)=>{if(currentDeviceSize().width===width&&currentDeviceSize().height===height&&selectedDeviceKind===kind)return;preset.value='custom';screenCustomW.value=width;screenCustomH.value=height;customDeviceWidth.value=width;customDeviceHeight.value=height;selectedDeviceKind=kind||'custom';safeProfile.value=kind==='smartphone'?'auto':'none';device.classList.toggle('android-exact',currentPreviewMode==='android'||(document.getElementById('androidBoundsInEdit').checked&&['smartphone','tablet'].includes(kind)));zoom.value='fit';setDevice();},fitEditor:()=>{if(window.StudioWorkspace){zoom.value='fit';setDevice();}},context:()=>({selection:lastState,css:cssOut.value,source:currentSource})};
   setDevice();
 })();
 </script>

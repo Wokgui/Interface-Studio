@@ -1,6 +1,6 @@
 {
   "name": "app-interface-studio",
-  "version": "6.81.0",
+  "version": "6.82.0",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
@@ -14,7 +14,8 @@
     "test:workspace": "node scripts/test-workspace.cjs",
     "setup:runtime": "node scripts/ensure-runtime.cjs",
     "prestart": "npm run setup:runtime",
-    "predist:win": "npm run setup:runtime"
+    "predist:win": "npm run setup:runtime",
+    "test:screens": "node scripts/test-screen-profiles.cjs"
   },
   "devDependencies": {
     "agent-browser": "^0.38.2",

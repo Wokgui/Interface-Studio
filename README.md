@@ -1,10 +1,22 @@
-# Interface Studio 6.81.0
+# Interface Studio 6.82.0
 
 Éditeur visuel Windows autonome avec Éditeur, Simulation et ChatGPT sur une seule ligne.
 
 ## Télécharger et ouvrir
 
-La [release Windows](https://github.com/Wokgui/Interface-Studio/releases/tag/v6.81.0) contient le portable et les sources modifiables. Lancer `App-Interface-Studio-6.81.0-portable-x64.exe`, puis ouvrir une application HTML, un dossier ou un APK contenant une application web. Aucun téléphone ni Android Studio n’est nécessaire à cette exécution locale. Electron, Java et les outils d’importation APK sont inclus.
+La [release Windows](https://github.com/Wokgui/Interface-Studio/releases/tag/v6.82.0) contient le portable et les sources modifiables. Lancer `App-Interface-Studio-6.82.0-portable-x64.exe`, puis ouvrir une application HTML, un dossier ou un APK contenant une application web. Aucun téléphone ni Android Studio n’est nécessaire à cette exécution locale. Electron, Java et les outils d’importation APK sont inclus.
+
+## Formats téléphone, TV et ordinateur
+
+Le choix Écran reste accessible dans la barre principale. Il contient plusieurs dimensions de téléphone, un pliable ouvert, une tablette, une TV 16:9, un ordinateur, un mode Adaptatif et des dimensions personnalisées de 240 à 8192 pixels CSS. Pivoter inverse la largeur et la hauteur sans recharger l’application. Les réglages sont mémorisés séparément pour chaque source.
+
+Automatique utilise les mesures d’un appareil importé ou le profil des ressources Android, notamment Photo TV en 1280 × 720. Une application web peut déclarer ses dimensions avec `<meta name="studio-screen" content="1920x1080 tv">` (types phone, tablet, tv ou desktop). En l’absence de ces informations, Studio utilise un format de travail initial : téléphone pour Radio intelligente et ordinateur pour les autres sources. Il ne peut pas déduire le modèle physique d’un téléphone à partir d’un APK universel.
+
+Les formats fixes conservent leur ratio et s’ajustent à la place du panneau sans étirer ni rogner l’écran. Adaptatif change réellement le viewport de chaque panneau : les media queries et la disposition de l’application s’appliquent à sa largeur. Cette option ne réécrit pas une application dont l’interface n’est pas responsive. Les dimensions personnalisées sont logiques (CSS), distinctes de la résolution physique et de la densité de pixels du téléphone.
+
+Les formats et le moteur d’exécution sont indépendants. Photo TV est une application Kotlin/Android native : l’importation reconnaît le paysage, mais son diaporama et ses accès aux photos demandent Android. Un message lisible et un bouton Ouvrir les outils Android remplacent la fausse simulation. Les programmes Windows natifs ne peuvent pas être exécutés ni rendus éditables par le runtime web de Studio.
+
+Validation ajoutée : 36 combinaisons de neuf profils, deux tailles de fenêtre et deux/trois panneaux ; viewport, proportions, absence de débordement du cadre, vraie interaction web, rotation, dimensions personnalisées, mémorisation et réorganisation responsive. L’APK Photo TV v0.12 est également importé pour vérifier son profil paysage et la distinction entre aperçu et exécution.
 
 ## Simulation réelle
 
@@ -36,6 +48,7 @@ npm ci
 npm start
 npm run check
 npm run test:workspace
+npm run test:screens
 npm run smoke
 npm run dist:win
 ```

@@ -1,5 +1,6 @@
 const {chromium}=require('playwright'),{spawn}=require('node:child_process'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const exe=path.resolve(__dirname,'../dist/App-Interface-Studio-6.81.0-portable-x64.exe');
+const version=require('../package.json').version;
+const exe=path.resolve(__dirname,'../dist/App-Interface-Studio-'+version+'-portable-x64.exe');
 const profile=path.resolve(__dirname,'../../test-results/Profil portable autonome');fs.mkdirSync(profile,{recursive:true});
 (async()=>{
  const env={...process.env,AIS_WORKSPACE_TEST:'1',PATH:path.join(process.env.SystemRoot,'System32')};for(const k of ['JAVA_HOME','JDK_HOME','ANDROID_HOME','ANDROID_SDK_ROOT'])delete env[k];
@@ -11,7 +12,7 @@ const profile=path.resolve(__dirname,'../../test-results/Profil portable autonom
   const page=browser.contexts()[0].pages().find(p=>p.url().includes('visual-editor.html'));assert(page);
   await page.waitForFunction(()=>window.StudioHost&&window.StudioWorkspace);
   const report={info:await page.evaluate(()=>window.AppInterfaceStudio.appInfo()),tools:await page.evaluate(()=>window.AppInterfaceStudio.apkCommand('status'))};
-  assert(report.info.packaged&&report.info.version==='6.81.0');assert(report.tools.ok&&report.tools.java&&report.tools.sdk);
+  assert(report.info.packaged&&report.info.version===version);assert(report.tools.ok&&report.tools.java&&report.tools.sdk);
   const source=await page.evaluate(()=>window.AppInterfaceStudio.testSource());assert(source.ok);
   await page.evaluate(s=>window.StudioHost.loadSource(s),source.source);
   await page.evaluate(()=>{for(const e of document.querySelectorAll('[data-pane]'))e.checked=true;document.querySelector('[data-pane]').dispatchEvent(new Event('change'));});

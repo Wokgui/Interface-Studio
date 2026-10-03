@@ -9,6 +9,7 @@
   toolbar.className = 'studio-toolbar';
   toolbar.innerHTML = '<button class="btn" data-studio-mode="editor">Édition</button><button class="btn" data-studio-mode="simulation">Simulation</button><button class="btn" data-studio-mode="split">Côte à côte</button><span>Panneaux</span><label><input type="checkbox" data-pane="editor" checked> Éditeur</label><label><input type="checkbox" data-pane="simulation" checked> Simulation</label><label><input type="checkbox" data-pane="chat"> ChatGPT</label><button class="btn" id="studioEqualWidths">Largeurs égales</button>';
   main.before(toolbar);
+  toolbar.insertAdjacentHTML('beforeend','<label>Écran <select id="studioScreenProfile" aria-label="Format de l’application"><option value="auto">Automatique</option><option value="compact">Téléphone compact · 360 × 640</option><option value="phone390">Téléphone · 390 × 844</option><option value="phone">Téléphone · 412 × 915</option><option value="phone430">Téléphone large · 430 × 932</option><option value="fold">Téléphone pliable ouvert · 768 × 1024</option><option value="tablet">Tablette · 768 × 1024</option><option value="tv">TV · 16:9</option><option value="desktop">Ordinateur</option><option value="responsive">Adaptatif</option><option value="custom">Dimensions personnalisées</option></select></label><label id="studioCustomScreen" hidden><input id="studioScreenW" type="number" min="240" max="8192" value="1280" aria-label="Largeur de l’écran"> × <input id="studioScreenH" type="number" min="240" max="8192" value="720" aria-label="Hauteur de l’écran"><button class="btn" id="studioApplyScreen">Appliquer</button></label><button class="btn" id="studioRotateScreen" title="Inverser largeur et hauteur">Pivoter</button><span id="studioScreenInfo" aria-live="polite"></span>');
   document.querySelector('.mode-switch')?.remove();
   const pane = (id, title, actions) => {
     const el = document.createElement('section');
@@ -27,7 +28,25 @@
   const area = simulation.querySelector('.studio-simulation-area');
   const screen = simulation.querySelector('.studio-simulation-screen');
   const holder = simulation.querySelector('.studio-simulation-holder');
+  const nativeNotice=document.createElement('div');nativeNotice.className='studio-native-notice';nativeNotice.hidden=true;
+  nativeNotice.innerHTML='<b>Exécution Android nécessaire</b><p>Le format de cette application est détecté. Ses interactions, ses photos et son diaporama nécessitent Android. L’aperçu des ressources dans l’Éditeur ne fait pas tourner son code natif.</p><button class="btn">Ouvrir les outils Android</button>';
+  area.append(nativeNotice);nativeNotice.querySelector('button').onclick=()=>window.AppInterfaceStudio?.openAndroidLab();
   let source = null, mode = 'editor', selecting = false, lastSelection = null;
+  const screenSelect=document.getElementById('studioScreenProfile'), screenInfo=document.getElementById('studioScreenInfo');
+  const profiles={compact:{width:360,height:640,kind:'smartphone'},phone390:{width:390,height:844,kind:'smartphone'},phone:{width:412,height:915,kind:'smartphone'},phone430:{width:430,height:932,kind:'smartphone'},fold:{width:768,height:1024,kind:'smartphone'},tablet:{width:768,height:1024,kind:'tablet'},tv:{width:1920,height:1080,kind:'tv'},desktop:{width:1366,height:768,kind:'desktop'}};
+  let detectedProfile=profiles.phone, sourceKey='', projectProfiles={};
+  let customProfile={width:1280,height:720,kind:'custom'}, rotated=false;
+  try{projectProfiles=JSON.parse(localStorage.getItem('ais-screen-profiles')||'{}');}catch{}
+  const validProfile=p=>p&&Number.isFinite(Number(p.width))&&Number.isFinite(Number(p.height))&&p.width>=240&&p.width<=8192&&p.height>=240&&p.height<=8192;
+  function currentProfile(){const p=screenSelect.value==='custom'?customProfile:profiles[screenSelect.value]||detectedProfile;return rotated?{...p,width:p.height,height:p.width}:p;}
+  function saveScreen(){if(sourceKey){projectProfiles[sourceKey]={mode:screenSelect.value,custom:customProfile,rotated};localStorage.setItem('ais-screen-profiles',JSON.stringify(projectProfiles));}}
+  screenSelect.onchange=()=>{rotated=false;document.getElementById('studioCustomScreen').hidden=screenSelect.value!=='custom';saveScreen();fit();};
+  document.getElementById('studioApplyScreen').onclick=()=>{const width=Number(document.getElementById('studioScreenW').value),height=Number(document.getElementById('studioScreenH').value);if(!validProfile({width,height})){screenInfo.textContent='Dimensions attendues : 240 à 8192 pixels CSS.';return;}customProfile={width,height,kind:'custom'};saveScreen();fit();};
+  document.getElementById('studioRotateScreen').onclick=()=>{if(screenSelect.value==='responsive')return;rotated=!rotated;saveScreen();fit();};
+  // Keep the existing editor's device controls functional as well.
+  function followEditorSize(){const device=document.querySelector('.device');const p={width:parseFloat(device.style.width),height:parseFloat(device.style.height),kind:device.classList.contains('android-exact')?'smartphone':'custom'};if(!validProfile(p))return;customProfile=p;rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();}
+  document.addEventListener('click',e=>{if(e.target.closest('[data-device-kind],#rotateDeviceBtn,#rotateDeviceBtn2'))followEditorSize();});
+  document.addEventListener('change',e=>{if(['devicePreset','screenCustomW','screenCustomH','customDeviceWidth','customDeviceHeight'].includes(e.target.id))followEditorSize();});
   let preferences = {};
   try { preferences = JSON.parse(localStorage.getItem('ais-workspace-v681') || '{}'); } catch {}
   let chosen = Array.isArray(preferences.chosen) ? preferences.chosen.filter(x => frames[x]) : ['editor', 'simulation'];
@@ -37,10 +56,15 @@
   const persist = () => localStorage.setItem('ais-workspace-v681', JSON.stringify({chosen, ratios}));
   const send = (type, payload = {}) => iframe.contentWindow?.postMessage({source:'ais-simulation-host', type, payload}, '*');
   function fit() {
-    const device = document.querySelector('.device');
-    const width = parseFloat(device?.style.width) || 412, height = parseFloat(device?.style.height) || 915;
+    const profile=currentProfile(), responsive=screenSelect.value==='responsive';
+    const width=responsive?Math.max(240,area.clientWidth-28):Number(profile.width), height=responsive?Math.max(240,area.clientHeight-28):Number(profile.height);
+    if(responsive){window.StudioHost?.setViewport(Math.max(240,workspace.clientWidth-82),Math.max(240,workspace.clientHeight-82),'desktop');}
+    else window.StudioHost?.setViewport(width,height,profile.kind||'custom');
+    screenInfo.textContent=responsive?'Contenu réorganisé selon la largeur':width+' × '+height+(source?.type==='android-project'?' · aperçu Android':'');
+    document.getElementById('studioRotateScreen').disabled=responsive;
+    screen.classList.toggle('studio-landscape',width>height);
     if (!simulation.hidden) {
-      const scale = Math.max(.05, Math.min(1, (area.clientWidth-28)/width, (area.clientHeight-28)/height));
+      const scale = Math.max(.001, Math.min(1, (area.clientWidth-28)/width, (area.clientHeight-28)/height));
       screen.style.width = width+'px'; screen.style.height = height+'px'; screen.style.transform = `scale(${scale})`;
       holder.style.width = width*scale+'px'; holder.style.height = height*scale+'px';
     }
@@ -96,6 +120,14 @@
   document.getElementById('studioReloadSimulation').onclick=()=>{iframe.contentWindow?.location.reload();};
   function setSource(next) {
     source=next;
+    const native=next?.type==='apk-runtime-only'||next?.type==='android-project';nativeNotice.hidden=!native;holder.hidden=native;document.getElementById('studioSelectElement').disabled=native;document.getElementById('studioReloadSimulation').disabled=native;
+    sourceKey=next?.path?(next.path+'|'+(next.entry||'')):next?.url||'';
+    const saved=projectProfiles[sourceKey];screenSelect.value=typeof saved==='string'?saved:saved?.mode||'auto';if(!screenSelect.value)screenSelect.value='auto';
+    customProfile=validProfile(saved?.custom)?saved.custom:{width:1280,height:720,kind:'custom'};rotated=!!saved?.rotated;
+    document.getElementById('studioScreenW').value=customProfile.width;document.getElementById('studioScreenH').value=customProfile.height;document.getElementById('studioCustomScreen').hidden=screenSelect.value!=='custom';
+    const supplied=next?.phone?.profile||next?.nativePreviewProfile||next?.screenProfile;
+    detectedProfile=validProfile(supplied)?{width:Number(supplied.width),height:Number(supplied.height),kind:supplied.deviceKind||supplied.kind||(next?.phone?.profile?'smartphone':'custom')}:((next?.type==='bundled-demo'||/radio intelligente|radio-intelligente/i.test(next?.label||''))?profiles.phone:profiles.desktop);
+    fit();
     if(next?.type==='apk-runtime-only'||next?.type==='android-project'){
       iframe.srcdoc='<body style="font:16px system-ui;padding:24px">Cette application contient du code Android natif. Son exécution nécessite le moteur Android facultatif. L’aperçu des ressources reste disponible dans l’Éditeur.</body>';
     } else if(next?.url) {iframe.removeAttribute('srcdoc');const u=new URL(next.url,location.href);u.searchParams.delete('visual-editor');u.searchParams.set('__ais_simulation','1');iframe.src=u.href;}
@@ -104,13 +136,14 @@
   window.addEventListener('message',e=>{
     const d=e.data;
     if(e.source===iframe.contentWindow && d?.source==='ais-simulation'){
+      if(d.type==='screen-profile'&&validProfile(d.payload)&&!source?.nativePreviewProfile&&!source?.phone?.profile){detectedProfile=d.payload;fit();}
       if(d.type==='selection'){lastSelection=d.payload;window.StudioHost?.select(d.payload.selector);window.StudioChatGpt?.setSelection?.(d.payload);}
     } else if(e.source===document.getElementById('appFrame')?.contentWindow && d?.source==='app-visual-editor') {
       if(d.type==='state' && d.payload?.selector){lastSelection=d.payload;send('selection',d.payload);send('css',{css:d.payload.css||''});window.StudioChatGpt?.setSelection?.(d.payload);}
       if(d.type==='css'){send('css',{css:d.payload?.css||''});}
     }
   });
-  window.StudioWorkspace={setSource,fit,setMode(next){mode=next;render();},getSource:()=>source,getSelection:()=>lastSelection};
+  window.StudioWorkspace={setSource,fit,useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();},setMode(next){mode=next;render();},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
   new ResizeObserver(fit).observe(main);
   new ResizeObserver(fit).observe(workspace);
   new ResizeObserver(fit).observe(area);

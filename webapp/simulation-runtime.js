@@ -67,4 +67,8 @@
   document.addEventListener('playing',e=>{if(e.target instanceof HTMLMediaElement)emit('media',{state:'playing',src:e.target.currentSrc});},true);
   document.addEventListener('error',e=>{if(e.target instanceof HTMLMediaElement)emit('media',{state:'error',src:e.target.currentSrc,code:e.target.error?.code});},true);
   emit('ready',{url:location.href});
+  // Explicit app metadata is stable across host resizing; never infer from the
+  // current iframe viewport, which would feed its own dimensions back to Studio.
+  const declared=document.querySelector('meta[name="studio-screen"]')?.content;
+  if(declared){const match=declared.match(/^(\d+)x(\d+)(?:\s+(phone|tablet|tv|desktop))?$/i);if(match)emit('screen-profile',{width:Number(match[1]),height:Number(match[2]),kind:match[3]?.toLowerCase()==='phone'?'smartphone':match[3]?.toLowerCase()||'custom'});}
 })();

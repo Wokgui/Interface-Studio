@@ -11,6 +11,13 @@ body.studio-layout .workspace{flex:1;min-height:0;width:100%;height:auto;padding
 .studio-simulation-area{flex:1;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:14px;background:#eeebf3}
 .studio-simulation-screen{position:relative;flex:none;background:white;overflow:hidden;border-radius:16px;box-shadow:0 0 0 5px #24212a;transform-origin:top left}
 .studio-simulation-holder{position:relative;flex:none}
+.studio-simulation-screen.studio-landscape{border-radius:3px}
+#studioScreenProfile{max-width:160px;padding:5px;border:1px solid #ddd3ed;border-radius:6px;background:white;color:inherit}
+#studioScreenInfo{font-size:11px;color:#61576e}
+#studioCustomScreen[hidden]{display:none}
+#studioCustomScreen input{width:68px;padding:5px;border:1px solid #ddd3ed;border-radius:5px}
+.studio-simulation-holder[hidden],.studio-native-notice[hidden]{display:none}
+.studio-native-notice{max-width:430px;padding:20px;background:white;border:1px solid #ddd3ed;border-radius:10px;font:14px/1.5 system-ui;color:#30263a}
 .studio-simulation-screen iframe{width:100%;height:100%;border:0;display:block}
 .studio-splitter{width:8px;background:transparent;cursor:col-resize;touch-action:none;position:relative}
 .studio-splitter:after{content:'';position:absolute;top:0;bottom:0;left:3px;width:2px;background:#d0c0e8}
