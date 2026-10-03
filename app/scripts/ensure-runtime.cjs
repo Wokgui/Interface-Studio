@@ -10,7 +10,7 @@ const expected='e63f213ec8fb2acb736bbad8aba99f80f9b2d0e69c987c66e566353dac40a6d2
  if(crypto.createHash('sha256').update(bytes).digest('hex')!==expected)throw Error('Empreinte du runtime incorrecte.');
  const archive=path.join(appRoot,'.runtime-cache.zip');fs.writeFileSync(archive,bytes);
  const quote=s=>"'"+s.replaceAll("'","''")+"'";
- execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command','Expand-Archive -LiteralPath '+quote(archive)+' -DestinationPath '+quote(appRoot)+' -Force'],{windowsHide:true,stdio:'inherit'});
+ execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory("+quote(archive)+','+quote(appRoot)+')'],{windowsHide:true,stdio:'inherit'});
  if(!fs.existsSync(path.join(root,'java/bin/java.exe')))throw Error('Runtime incomplet.');
  console.log('Runtime APK prêt.');
 })().catch(e=>{console.error(e.message);process.exitCode=1;});
