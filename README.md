@@ -1,27 +1,60 @@
-# Interface Studio
+# Interface Studio 6.81.0
 
-Dépôt autonome d’Interface Studio.
+Éditeur visuel Windows autonome avec Éditeur, Simulation et ChatGPT sur une seule ligne.
 
-## Version de référence
+## Télécharger et ouvrir
 
-**6.78.0** — dérivée de la base Windows 6.77.0 récupérée le 3 octobre 2026.
+La [release Windows](https://github.com/Wokgui/Interface-Studio/releases/tag/v6.81.0) contient le portable et les sources modifiables. Lancer `App-Interface-Studio-6.81.0-portable-x64.exe`, puis ouvrir une application HTML, un dossier ou un APK contenant une application web. Aucun téléphone ni Android Studio n’est nécessaire à cette exécution locale. Electron, Java et les outils d’importation APK sont inclus.
 
-### Vue multi-panneaux 6.78
+## Simulation réelle
 
-Le mode **Côte à côte** permet de choisir librement de 1 à 3 panneaux parmi :
+La Simulation charge le vrai HTML, CSS et JavaScript de l’application ouverte, avec audio, formulaires, stockage local, IndexedDB, fichiers et navigation. Elle conserve son instance pendant les changements de disposition. L’éditeur embarqué dans certains APK est exclu de cette vue pour laisser les boutons agir normalement.
 
-- Éditeur
-- Android / exécution
-- ChatGPT
+Pour les anciennes sauvegardes de Radio intelligente, le morceau affiché est restauré dans l’état du vrai moteur avant Lecture. Son extrait est récupéré dans le catalogue Deezer et ses liens signés expirés sont renouvelés. Aucun son de démonstration ne remplace le morceau. Les extraits et services en ligne nécessitent Internet et restent soumis à leur disponibilité.
 
-Les séparateurs sont redimensionnables à la souris et au clavier, les proportions sont mémorisées et un bouton permet de rétablir des largeurs égales. ChatGPT conserve également son mode fenêtre flottante.
+Le service `/api/youtube-search` utilisé par Radio intelligente est disponible localement. Les autres applications nécessitant un serveur propre doivent être ouvertes à l’adresse de ce serveur. Une application Android entièrement native, sans runtime web, nécessite le moteur Android facultatif ; l’aperçu XML n’est pas présenté comme une exécution native.
 
-## Organisation
+## Panneaux et sélection
 
-- `app/` : processus Electron et scripts desktop.
-- `webapp/` : éditeur visuel et interface.
-- Les sources historiques provenaient du dépôt Radio-intelligente. À partir de la 6.78, Interface Studio est un projet autonome dans ce dépôt.
+- Choisir Édition, Simulation ou Côte à côte, puis cocher un, deux ou trois panneaux.
+- Deux panneaux utilisent chacun la moitié de la zone ; trois utilisent chacun un tiers par défaut.
+- Déplacer les séparateurs ou utiliser leurs flèches clavier. Les proportions sont mémorisées ; « Largeurs égales » les réinitialise.
+- Chaque écran s’ajuste à son propre panneau ; le zoom ChatGPT suit également sa largeur.
+- ChatGPT contient sa conversation et le bouton Réglages. Les options de compte, fichiers et modifications s’ouvrent avec ce bouton.
+- Dans la Simulation, « Sélectionner » désigne un élément sans déclencher son action. « Interagir » rétablit les interactions ordinaires. La sélection et son contexte sont synchronisés avec l’Éditeur et ChatGPT.
+- Les changements CSS de l’Éditeur apparaissent dans la Simulation sans interrompre le runtime. Recharger relance les sources modifiées.
 
-## Validation 6.78
+## Sources autonomes
 
-Tous les fichiers JavaScript et CommonJS du paquet Windows 6.78 ont passé `node --check`.
+`app/` contient Electron, les modules APK et ChatGPT, et les tests. `webapp/` contient l’éditeur, la Simulation et la démonstration.
+
+Avec Node.js sous Windows :
+
+```powershell
+cd app
+npm ci
+npm start
+npm run check
+npm run test:workspace
+npm run smoke
+npm run dist:win
+```
+
+Le lancement depuis les sources et la compilation récupèrent, si nécessaire, le runtime APK Windows de cette release et vérifient son SHA-256. Il est déjà inclus dans le portable. `prepare-apk-runtime.cjs` permet aussi de le construire depuis un JDK 17 et Android Build-Tools 35.0.0. Les licences accompagnent le runtime et les outils dans `app/vendor`. Les anciens scripts historiques sont conservés ; les commandes ci-dessus sont les vérifications actives de ce dépôt.
+
+## Validation de la 6.81
+
+Tests dans Electron et dans la version Windows compilée, avec la source web et un APK Radio intelligente v112 :
+
+- 12 configurations : quatre combinaisons de deux/trois panneaux, sur 2048×900, 1520×1000 et 1100×720.
+- Panneaux sur une ligne, largeur totale utilisée et écran contenu dans son panneau.
+- Séparateurs souris/clavier, réinitialisation des largeurs et conservation de l’instance.
+- Lecture réelle de Vainglory — Helios, progression audio, pause, reprise et positionnement.
+- Navigation Réglages/Retour, choix Oui, état enregistré et annulation.
+- Sélection Simulation → Éditeur → contexte ChatGPT, et propagation d’une vraie modification CSS.
+- Vue ChatGPT native alignée sur son panneau, et retrait de cette vue pendant l’affichage des réglages.
+- Aucune erreur JavaScript non interceptée dans ces parcours.
+
+Le smoke test vérifie aussi les transactions, annulations, captures, exports portables, scénarios et rapports. Son audit ergonomique de l’application Radio signale encore de petites cibles tactiles dans les 12 profils. Ce diagnostic de l’application ouverte est distinct des vérifications de disposition de Studio.
+
+La base locale complète 6.73 a fourni les modules absents du dépôt 6.78. Les captures de la conversation ont été récupérées et examinées. Les archives 6.79/6.80 citées dans la conversation n’étaient pas disponibles comme fichiers ; les corrections sont reconstruites et validées dans ce dépôt autonome.

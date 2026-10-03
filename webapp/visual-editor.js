@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  if(window.name==='aisSimulation' || new URLSearchParams(location.search).get('__ais_simulation')==='1')return;
+
   const panel = document.getElementById('uiPanel');
   if (document.getElementById('veLauncher')) return;
 

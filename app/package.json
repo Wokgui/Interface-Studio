@@ -1,21 +1,28 @@
 {
   "name": "app-interface-studio",
-  "version": "6.78.0",
+  "version": "6.81.0",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "check": "node --check main.cjs && node --check preload.cjs && node --check ../visual-editor.js && node scripts/check-responsive.cjs",
+    "check": "node scripts/check.cjs",
     "smoke": "node scripts/run-smoke.cjs",
     "dist:win": "npm run icon && electron-builder --win portable",
-    "icon": "node scripts/make-icon.cjs"
+    "icon": "node scripts/make-icon.cjs",
+    "check:android": "node --check android-lab.cjs && node --check android-video.cjs && node --check android-preload.cjs && node --check ../android-lab.js && node scripts/check-android.cjs && node scripts/check-video.cjs && node --check apk-editor.cjs && node --check ../apk-editor-ui.js",
+    "test:workspace": "node scripts/test-workspace.cjs",
+    "setup:runtime": "node scripts/ensure-runtime.cjs",
+    "prestart": "npm run setup:runtime",
+    "predist:win": "npm run setup:runtime"
   },
   "devDependencies": {
+    "agent-browser": "^0.38.2",
     "electron": "31.7.7",
     "electron-builder": "24.13.3",
-    "sharp": "0.33.5",
-    "png-to-ico": "2.1.8"
+    "playwright": "^1.63.0",
+    "png-to-ico": "2.1.8",
+    "sharp": "0.33.5"
   },
   "build": {
     "appId": "fr.wokgui.appinterfacestudio",
@@ -26,40 +33,34 @@
     "files": [
       "main.cjs",
       "preload.cjs",
-      "package.json"
+      "package.json",
+      "android-lab.cjs",
+      "android-preload.cjs",
+      "android-video.cjs",
+      "vendor/**/*",
+      "apk-editor.cjs",
+      "phone-source.cjs",
+      "native-preview.cjs",
+      "chatgpt-project.cjs",
+      "chatgpt-window.cjs",
+      "chatgpt-direct.cjs",
+      "local-services.cjs"
     ],
     "extraResources": [
       {
-        "from": "..",
+        "from": "../webapp",
         "to": "webapp",
         "filter": [
-          "app-runtime.html",
-          "index.html",
-          "visual-editor.html",
-          "visual-editor.js",
-          "visual-editor.css",
-          "visual-elements.js",
-          "visual-elements.json",
-          "radio-v51.css",
-          "radio-v51.js",
-          "radio-v51-core.js",
-          "music-player.css",
-          "music-player.js",
-          "cloud-backup.js",
-          "manifest.webmanifest",
-          "cover-default.png",
-          "icon-192.png",
-          "icon-512.png",
-          "icon-maskable-192.png",
-          "apple-touch-icon.png",
-          "favicon-32.png",
-          "silence.wav",
-          "vendor/**/*"
+          "**/*"
         ]
       },
       {
         "from": "build/icon-512.png",
         "to": "app-interface-studio-icon.png"
+      },
+      {
+        "from": "runtime",
+        "to": "apk-runtime"
       }
     ],
     "win": {
@@ -71,8 +72,16 @@
           ]
         }
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
     },
-    "artifactName": "App-Interface-Studio-${version}-portable-${arch}.${ext}"
-  }
+    "artifactName": "App-Interface-Studio-${version}-portable-${arch}.${ext}",
+    "asarUnpack": [
+      "vendor/**/*"
+    ]
+  },
+  "dependencies": {
+    "yauzl": "^3.2.0"
+  },
+  "author": "Wokgui"
 }

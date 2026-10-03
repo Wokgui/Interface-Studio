@@ -1,0 +1,7 @@
+app/node_modules/
+app/dist/
+app/build/icon-*.png
+app/build/icon.ico
+app/runtime/
+app/.runtime-cache.zip
+test-results/

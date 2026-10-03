@@ -2,6 +2,14 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('AppInterfaceStudio', {
   isDesktop: true,
+  testSource: file=>ipcRenderer.invoke('studio:test-source',file),
+  apkCommand: (action,payload) => ipcRenderer.invoke('apk:command',{action,payload}),
+  openApk: () => ipcRenderer.invoke('android:open',{pickApk:true}),
+  openAndroidLab: options => ipcRenderer.invoke('android:open',options||{}),
+  onChatGptAccount: fn=>{ipcRenderer.on('chatgpt:account-status',(_e,p)=>fn(p))},
+  chatGptProject: (action,payload)=>ipcRenderer.invoke('chatgpt:project',{action,payload}),
+  chatGptView: payload=>ipcRenderer.invoke('chatgpt:view',payload),
+  onChatGptStatus: fn=>{ipcRenderer.on('chatgpt:web-status',(_e,p)=>fn(p))},
   openUrl: value => ipcRenderer.invoke('source:open-url', value),
   pickFolder: () => ipcRenderer.invoke('source:pick-folder'),
   pickHtml: () => ipcRenderer.invoke('source:pick-html'),
@@ -10,6 +18,8 @@ contextBridge.exposeInMainWorld('AppInterfaceStudio', {
   injectEditor: () => ipcRenderer.invoke('source:inject-editor'),
   setPreviewMode: payload => ipcRenderer.invoke('preview:set-mode', payload),
   openAsApp: payload => ipcRenderer.invoke('preview:open-app', payload),
+  openInstalledApk: payload => ipcRenderer.invoke('adb:open-installed',payload||{}),
+  androidGeometry: payload => ipcRenderer.invoke('adb:geometry',payload||{}),
   adbStatus: () => ipcRenderer.invoke('adb:status'),
   adbScreenshot: payload => ipcRenderer.invoke('adb:screenshot', payload || {}),
   pickReferenceImage: () => ipcRenderer.invoke('reference:pick-image'),

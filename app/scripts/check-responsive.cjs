@@ -1,15 +1,15 @@
 const fs=require('fs');
 const path=require('path');
 
-const root=path.resolve(__dirname,'..','..');
+const root=path.resolve(__dirname,'..','..','webapp');
 const html=fs.readFileSync(path.join(root,'visual-editor.html'),'utf8');
 const engine=fs.readFileSync(path.join(root,'visual-editor.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'visual-editor.css'),'utf8');
 const runtime=fs.readFileSync(path.join(root,'app-runtime.html'),'utf8');
-const main=fs.readFileSync(path.join(root,'desktop','main.cjs'),'utf8');
+const main=fs.readFileSync(path.join(root,'..','app','main.cjs'),'utf8');
 const preload=fs.readFileSync(path.join(root,'desktop','preload.cjs'),'utf8');
 const smoke=fs.readFileSync(path.join(root,'desktop','scripts','run-smoke.cjs'),'utf8');
-const workflow=fs.readFileSync(path.join(root,'.github','workflows','build-desktop.yml'),'utf8');
+const workflow=fs.readFileSync(path.join(root,'..','.github','workflows','build-desktop.yml'),'utf8');
 const desktopPackage=fs.readFileSync(path.join(root,'desktop','package.json'),'utf8');
 
 function expect(text,needle,label){

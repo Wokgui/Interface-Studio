@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, clipboard, shell, session, webFrameMain, nativeImage } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, clipboard, shell, session, webFrameMain, nativeImage, WebContentsView, safeStorage } = require('electron');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -45,7 +45,7 @@ const MIME = {
 };
 
 function webRoot(){
-  return app.isPackaged ? path.join(process.resourcesPath, 'webapp') : path.resolve(__dirname, '..');
+  return app.isPackaged ? path.join(process.resourcesPath, 'webapp') : path.resolve(__dirname, '..', 'webapp');
 }
 
 function safeFile(root, pathname){
@@ -56,9 +56,10 @@ function safeFile(root, pathname){
 }
 
 function serveStatic(root){
-  return http.createServer((req,res)=>{
+  return http.createServer(async (req,res)=>{
     try{
       const url=new URL(req.url,'http://127.0.0.1');
+      if(await require('./local-services.cjs')(req,res,url))return;
       let pathname=decodeURIComponent(url.pathname);
       if(pathname==='/' || pathname==='') pathname='/index.html';
       let file=safeFile(root,pathname);
@@ -69,6 +70,11 @@ function serveStatic(root){
       res.statusCode=200;
       res.setHeader('content-type',MIME[ext]||'application/octet-stream');
       res.setHeader('cache-control','no-store');
+      if((ext==='.html'||ext==='.htm')&&url.searchParams.get('__ais_simulation')==='1'){
+        // A saved APK may include the old visual editor. Keep application scripts intact.
+        const html=fs.readFileSync(file,'utf8').replace(/<script\b[^>]*\bsrc=["'][^"']*visual-editor\.js[^"']*["'][^>]*>\s*<\/script>/gi,'');
+        res.end(html);return;
+      }
       fs.createReadStream(file).pipe(res);
     }catch(error){
       res.statusCode=500;
@@ -156,11 +162,13 @@ function androidRuntimeProfile(source, options){
     userAgent:androidWebViewUserAgent(),
     homeOrigin,
     topInset:Math.max(0,numberOr(opts.topInset,28)),
-    bottomInset:Math.max(0,numberOr(opts.bottomInset,24)),
+    bottomInset:Math.max(0,numberOr(opts.bottomInset,opts.navigationMode==='gesture'?24:48)),
+    systemBarsLayout:opts.systemBarsLayout==='inset'?'inset':'overlay',
+    navigationMode:opts.navigationMode==='gesture'?'gesture':'three-button',
     leftInset:Math.max(0,numberOr(opts.leftInset,0)),
     rightInset:Math.max(0,numberOr(opts.rightInset,0)),
-    statusBarColor:opts.statusBarColor||(radio?'#6f42c1':'#111111'),
-    navigationBarColor:opts.navigationBarColor||'#000000',
+    statusBarColor:opts.statusBarColor||(opts.systemBarsLayout==='inset'?(radio?'#6f42c1':'#111111'):'transparent'),
+    navigationBarColor:opts.navigationBarColor||(opts.systemBarsLayout==='inset'?'#000000':'rgba(0,0,0,.78)'),
     backgroundColor:opts.backgroundColor||'#ffffff',
     mainActivity:{
       profile:radio?'radio-intelligente':'generic-webview',
@@ -189,6 +197,7 @@ async function applyPreviewProfileToFrame(frame, profile){
     const payload=JSON.stringify(p);
     await frame.executeJavaScript(
       "(function(){"+
+      "if(!document.documentElement)return;"+
       "var p="+payload+";"+
       "window.__APP_INTERFACE_STUDIO_RUNTIME__=p;"+
       "window.__MAIN_ACTIVITY_PROFILE__=p.mainActivity||null;"+
@@ -224,6 +233,10 @@ function editorAssets(){
 
 async function injectEditorIntoFrame(frame){
   if(!frame || !mainWindow || frame === mainWindow.webContents.mainFrame)return false;
+  if(!frame.url || frame.url==='about:blank')return false;
+  if(frame.name==='aisSimulation'){
+    try {await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'simulation-runtime.js'),'utf8'));return true;}catch{return false;}
+  }
   try{
     const assets=editorAssets();
     const cssJson=JSON.stringify(assets.css);
@@ -317,7 +330,7 @@ function createWindow(){
     title:'App Interface Studio',
     icon:windowIcon,
     autoHideMenuBar:true,
-    show:!smokeMode,
+    show:!smokeMode&&process.env.AIS_WORKSPACE_TEST!=='1',
     webPreferences:{
       preload:path.join(__dirname,'preload.cjs'),
       contextIsolation:true,
@@ -423,13 +436,6 @@ function createWindow(){
     }catch(_){}
   });
 
-  mainWindow.webContents.on('did-frame-navigate',(_event,_url,_httpResponseCode,_httpStatusText,isMainFrame,frameProcessId,frameRoutingId)=>{
-    if(isMainFrame)return;
-    try{
-      const frame=webFrameMain.fromId(frameProcessId,frameRoutingId);
-      if(frame) setTimeout(()=>injectEditorIntoFrame(frame),60);
-    }catch(_){}
-  });
 
   mainWindow.webContents.on('did-navigate-in-page',(_event,_url,isMainFrame,frameProcessId,frameRoutingId)=>{
     if(isMainFrame)return;
@@ -468,7 +474,9 @@ function openAsAppWindow(payload){
 
   const runtimeUrl=new URL(studioBaseUrl+'/app-runtime.html');
   runtimeUrl.searchParams.set('target',target);
+  runtimeUrl.searchParams.set('screenWidth',String(width));runtimeUrl.searchParams.set('screenHeight',String(height));
   runtimeUrl.searchParams.set('mode',android?'android':'preview');
+  runtimeUrl.searchParams.set('bars',profile.systemBarsLayout||'overlay');runtimeUrl.searchParams.set('navigation',profile.navigationMode||'three-button');
   runtimeUrl.searchParams.set('top',String(profile.topInset||0));
   runtimeUrl.searchParams.set('bottom',String(profile.bottomInset||0));
   runtimeUrl.searchParams.set('left',String(profile.leftInset||0));
@@ -525,7 +533,7 @@ function openAsAppWindow(payload){
 
 ipcMain.handle('preview:set-mode',async (_event,payload)=>{
   const mode=String(payload&&payload.mode||'edit');
-  if(mode==='android')editorPreviewProfile=androidRuntimeProfile(payload&&payload.source,payload&&payload.profile);
+  if(mode==='android'||(mode==='edit'&&payload?.profile?.simulateAndroid))editorPreviewProfile={...androidRuntimeProfile(payload&&payload.source,payload&&payload.profile),mode};
   else editorPreviewProfile={
     mode:mode==='preview'?'preview':'edit',
     userAgent:null,
@@ -540,13 +548,14 @@ ipcMain.handle('preview:set-mode',async (_event,payload)=>{
   return {ok:true,profile:editorPreviewProfile};
 });
 
-ipcMain.handle('preview:open-app',async (_event,payload)=>{
+ipcMain.handle('preview:open-app',async (event,payload)=>{
+  if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine refusee'};
   try{return openAsAppWindow(payload)}catch(error){return {ok:false,error:String(error&&error.message||error)}}
 });
 
 
 function findAdb(){
-  const candidates=[];
+  const candidates=[path.join(app.isPackaged?path.join(process.resourcesPath,'apk-runtime'):path.join(__dirname,'runtime'),'sdk','platform-tools','adb.exe')];
   const home=os.homedir();
   if(process.env.ANDROID_HOME)candidates.push(path.join(process.env.ANDROID_HOME,'platform-tools',process.platform==='win32'?'adb.exe':'adb'));
   if(process.env.ANDROID_SDK_ROOT)candidates.push(path.join(process.env.ANDROID_SDK_ROOT,'platform-tools',process.platform==='win32'?'adb.exe':'adb'));
@@ -573,6 +582,15 @@ function adbDevices(){
 ipcMain.handle('adb:status',async ()=>{
   const result=adbDevices();
   return {ok:result.ok,devices:result.devices,error:result.error||null};
+});
+
+ipcMain.handle('adb:geometry',async(event,payload)=>{
+ if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine refusee'};
+ try{const status=adbDevices();const serial=payload?.serial||(status.devices.length===1?status.devices[0]:null);if(!status.ok||!serial||!status.devices.includes(serial))throw Error('Brancher un seul appareil Android et autoriser le debogage USB.');return {ok:true,...await require('./phone-source.cjs').readGeometry(status.adb,serial)}}catch(e){return {ok:false,error:e.message}}
+});
+ipcMain.handle('adb:open-installed',async(event,payload)=>{
+ if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine refusee.'};
+ try{const status=adbDevices();if(!status.ok)throw Error(status.error);const serial=payload?.serial|| (status.devices.length===1?status.devices[0]:null);if(!serial||!status.devices.includes(serial))throw Error('Brancher un seul telephone, activer le debogage USB et ouvrir votre application.');const phone=await require('./phone-source.cjs').readPhone({adb:status.adb,serial,folder:path.join(app.getPath('userData'),'phone-imports')});const result=await openApkFile(phone.apk);if(!result.ok)return result;result.source.phone={serial,package:phone.package,profile:phone.profile};result.reference=phone.dataUrl;return result}catch(e){return {ok:false,error:e.message}}
 });
 
 ipcMain.handle('adb:screenshot',async (_event,payload)=>{
@@ -2025,12 +2043,13 @@ function escapeRegex(value){
 function detectAndroidProject(root){
   const manifestCandidates=[
     path.join(root,'app','src','main','AndroidManifest.xml'),
-    path.join(root,'src','main','AndroidManifest.xml')
+    path.join(root,'src','main','AndroidManifest.xml'),
+    path.join(root,'AndroidManifest.xml')
   ];
   const manifest=manifestCandidates.find(fs.existsSync);
   if(!manifest)return null;
   const appRoot=manifest.includes(path.join('app','src'))?path.join(root,'app'):root;
-  const mainRoot=path.join(appRoot,'src','main');
+  const mainRoot=manifest===path.join(root,'AndroidManifest.xml')?root:path.join(appRoot,'src','main');
   const layoutDir=path.join(mainRoot,'res','layout');
   const xmlLayouts=fs.existsSync(layoutDir)?walkFiles(layoutDir,['.xml'],120):[];
   const kotlinRoots=[path.join(mainRoot,'java'),path.join(mainRoot,'kotlin')].filter(fs.existsSync);
@@ -2055,49 +2074,7 @@ function pxFromAndroid(value,fallback){
   return m?Number(m[1]):fallback;
 }
 
-function xmlLayoutToHtml(file){
-  const xml=fs.readFileSync(file,'utf8');
-  const tokenRe=/<\/?[A-Za-z0-9_.$:-]+\b[^>]*>|<!--[\s\S]*?-->/g;
-  const root={tag:'root',children:[]},stack=[root];
-  let m,index=0;
-  while((m=tokenRe.exec(xml))){
-    const token=m[0];if(token.startsWith('<!--')||token.startsWith('<?'))continue;
-    if(/^<\//.test(token)){if(stack.length>1)stack.pop();continue}
-    const tag=(token.match(/^<\s*([A-Za-z0-9_.$:-]+)/)||[])[1];if(!tag)continue;
-    const attrs=token.slice(token.indexOf(tag)+tag.length,token.lastIndexOf('>'));
-    const node={tag,attrs,id:androidId(attrs),children:[],index:index++};
-    stack[stack.length-1].children.push(node);
-    if(!/\/\s*>$/.test(token))stack.push(node);
-  }
-  function esc(v){return String(v||'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
-  function render(node){
-    const short=node.tag.split('.').pop();
-    const width=attrValue(node.attrs,'android:layout_width'),height=attrValue(node.attrs,'android:layout_height');
-    const orientation=attrValue(node.attrs,'android:orientation');
-    const text=attrValue(node.attrs,'android:text').replace(/^@string\//,'');
-    const padding=pxFromAndroid(attrValue(node.attrs,'android:padding'),8);
-    const margin=pxFromAndroid(attrValue(node.attrs,'android:layout_margin'),4);
-    const bg=attrValue(node.attrs,'android:background');
-    const isContainer=/Layout|ViewGroup|ScrollView|RecyclerView/i.test(short);
-    const isButton=/Button/i.test(short);
-    const isInput=/EditText|TextInput/i.test(short);
-    const isImage=/ImageView/i.test(short);
-    let style='box-sizing:border-box;margin:'+margin+'px;padding:'+padding+'px;min-height:'+(height==='wrap_content'?34:pxFromAndroid(height,50))+'px;';
-    if(width==='match_parent')style+='width:100%;';
-    if(height==='match_parent')style+='min-height:100%;';
-    if(isContainer)style+='display:flex;flex-direction:'+(orientation==='horizontal'?'row':'column')+';gap:8px;';
-    if(bg&&/^#/.test(bg))style+='background:'+bg+';';
-    let content='';
-    if(isButton)content='<button style="min-height:44px;padding:8px 14px">'+esc(text||short)+'</button>';
-    else if(isInput)content='<input value="'+esc(text)+'" placeholder="'+esc(short)+'" style="min-height:44px;width:100%">';
-    else if(isImage)content='<div style="min-height:80px;background:#ececf2;display:grid;place-items:center;border-radius:8px">Image</div>';
-    else if(!isContainer)content='<div>'+esc(text||short)+'</div>';
-    content+=node.children.map(render).join('');
-    const key=node.id||('node-'+node.index);
-    return '<div id="native-'+esc(key)+'" data-native-key="'+esc(key)+'" data-native-tag="'+esc(short)+'" style="'+style+'">'+content+'</div>';
-  }
-  return {body:root.children.map(render).join(''),xml,nodes:root.children};
-}
+function xmlLayoutToHtml(file){return require('./native-preview.cjs').renderLayout(file);}
 
 function composeToHtml(file){
   const code=fs.readFileSync(file,'utf8'),lines=code.split(/\r?\n/),nodes=[];
@@ -2119,18 +2096,18 @@ async function buildAndroidPreview(android){
   const key=hashText(android.root).slice(0,12);
   const dir=path.join(os.tmpdir(),'app-interface-studio-native',key);
   fs.mkdirSync(dir,{recursive:true});
-  let content='',nativeFile='',nativeNodes=[];
+  let content='',nativeFile='',nativeNodes=[],nativeScreens=[];
   if(android.xmlLayouts.length){
     nativeFile=android.xmlLayouts.find(x=>path.basename(x).toLowerCase()==='activity_main.xml')||android.xmlLayouts[0];
-    const parsed=xmlLayoutToHtml(nativeFile);content=parsed.body;nativeNodes=parsed.nodes;
+    const parsed=xmlLayoutToHtml(nativeFile);content=parsed.body;nativeNodes=parsed.nodes;nativeScreens=parsed.screens||[];
   }else if(android.composeFiles.length){
     nativeFile=android.composeFiles[0];
     const parsed=composeToHtml(nativeFile);content=parsed.body;nativeNodes=parsed.nodes;
   }else content='<div style="padding:24px">Projet Android détecté, mais aucun layout XML ou composable simple n’a été trouvé.</div>';
-  const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;font-family:system-ui;background:#fff;color:#222}body{padding:12px}.native-root{max-width:100%;min-height:100%;display:flex;flex-direction:column;gap:6px}</style></head><body><div class="native-root">'+content+'</div></body></html>';
+  const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;font-family:system-ui;background:#fff;color:#222}html,body{height:100%;overflow:hidden}body{padding:0}.native-root{width:100%;height:100%;overflow:hidden}</style></head><body><div class="native-root">'+content+'</div><script>window.addEventListener("message",function(e){if(e.source!==parent||e.data?.type!=="studio-native-screen")return;var n=document.getElementById("native-"+e.data.id);while(n){var g=n.dataset.nativeScreenGroup;if(g){document.querySelectorAll("[data-native-screen-group]").forEach(function(s){if(s.dataset.nativeScreenGroup===g)s.style.display=s===n?s.dataset.nativeDisplay:"none"})}n=n.parentElement}});</script></body></html>';
   fs.writeFileSync(path.join(dir,'index.html'),html,'utf8');
   const url=await startLocalTarget(dir,'index.html');
-  return {url,nativeFile,nativeKind:android.nativeKind,nativeNodes};
+  return {url,nativeFile,nativeKind:android.nativeKind,nativeNodes,nativeScreens,nativePreviewProfile:require('./native-preview.cjs').windowProfile(android)};
 }
 
 function flattenAndroidXml(file){
@@ -2196,7 +2173,7 @@ ipcMain.handle('source:apply-native-edit',async (_event,payload)=>{
     before=fs.readFileSync(file,'utf8');
     loadedBefore=true;
     if(payload.beforeHash&&hashText(before)!==payload.beforeHash)return {ok:false,error:'Le fichier Android a changé. Reprépare le diff.'};
-    backup=file+'.ais-backup-'+new Date().toISOString().replace(/[:.]/g,'-');
+    backup=source.apkProject?path.join(apkEditor.project(source.apkProject.id).dir,'backup-'+crypto.randomUUID()):file+'.ais-backup-'+new Date().toISOString().replace(/[:.]/g,'-');
     fs.copyFileSync(file,backup);
     fs.writeFileSync(file,String(payload.after||''),'utf8');
     return {ok:true,file,backupPath:backup};
@@ -3746,19 +3723,20 @@ ipcMain.handle('source:pick-folder',async ()=>{
   const android=detectAndroidProject(root);
   if(android){
     const preview=await buildAndroidPreview(android);
-    return {ok:true,source:{type:'android-project',path:root,url:preview.url,label:path.basename(root)+' · Android natif',nativeKind:preview.nativeKind,nativeFile:preview.nativeFile}};
+    return {ok:true,source:{type:'android-project',path:root,url:preview.url,label:path.basename(root)+' · Android natif',nativeKind:preview.nativeKind,nativeFile:preview.nativeFile,nativePreviewProfile:preview.nativePreviewProfile,nativeScreens:preview.nativeScreens}};
   }
   return {ok:false,error:'Aucun index.html ni projet Android détecté dans ce dossier.'};
 });
 
 ipcMain.handle('source:pick-html',async ()=>{
   const result=await dialog.showOpenDialog({
-    title:'Choisir le fichier HTML principal',
+    title:'Ouvrir un fichier HTML ou APK',
     properties:['openFile'],
-    filters:[{name:'Application HTML',extensions:['html','htm']}]
+    filters:[{name:'Application HTML ou Android',extensions:['html','htm','apk']},{name:'APK Android',extensions:['apk']},{name:'HTML',extensions:['html','htm']}]
   });
   if(result.canceled||!result.filePaths[0])return {ok:false,canceled:true};
   const file=result.filePaths[0];
+  if(path.extname(file).toLowerCase()==='.apk')return openApkFile(file);
   const root=path.dirname(file);
   const entry=path.basename(file);
   const url=await startLocalTarget(root,entry);
@@ -3789,7 +3767,7 @@ ipcMain.handle('source:restore',async (_event,source)=>{
       if(!source.path||!fs.existsSync(source.path))return {ok:false,error:'Le projet Android est introuvable.'};
       const android=detectAndroidProject(source.path);if(!android)return {ok:false,error:'Structure Android invalide.'};
       const preview=await buildAndroidPreview(android);
-      return {ok:true,source:{...source,url:preview.url,nativeKind:preview.nativeKind,nativeFile:preview.nativeFile}};
+      return {ok:true,source:{...source,url:preview.url,nativeKind:preview.nativeKind,nativeFile:preview.nativeFile,nativePreviewProfile:preview.nativePreviewProfile,nativeScreens:preview.nativeScreens}};
     }
     if(source.type==='html'){
       const file=source.path;
@@ -4180,3 +4158,38 @@ app.on('window-all-closed',async ()=>{
   if(studioServer)studioServer.close();
   if(process.platform!=='darwin')app.quit();
 });
+
+let androidWindow;
+const apkEditor=require('./apk-editor.cjs').create({app,dialog});
+const androidLabBackend=require('./android-lab.cjs').register({app,ipcMain,dialog,mainWindow:()=>androidWindow});
+async function openAndroidWindow(){
+ if(androidWindow&&!androidWindow.isDestroyed()){androidWindow.focus();return {ok:true}}
+ androidWindow=new BrowserWindow({width:1400,height:950,webPreferences:{partition:'persist:ais-android-lab',preload:path.join(__dirname,'android-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
+ androidWindow.webContents.session.setPermissionRequestHandler((_contents,permission,callback)=>callback(permission==='fullscreen'));
+ androidWindow.webContents.setWindowOpenHandler(({url})=>{if(['https://developer.android.com/studio','https://developer.android.com/studio/run/emulator-acceleration'].includes(url))shell.openExternal(url);return {action:'deny'}});
+ androidWindow.webContents.on('will-navigate',(e,url)=>{if(url!==studioBaseUrl+'/android-lab.html')e.preventDefault()});
+ androidWindow.on('closed',()=>{androidLabBackend.stopVideo();androidWindow=null});
+ await androidWindow.loadURL(studioBaseUrl+'/android-lab.html');return {ok:true};
+}
+const runtimeApks=new Map();
+async function openApkFile(file){
+ try{const p=await apkEditor.importApk(file);const assets=path.join(p.decoded,'assets');const candidates=['index.html','public/index.html','www/index.html','web/index.html'];const entry=candidates.find(f=>fs.existsSync(path.join(assets,f)));let source;
+ if(entry){const url=await startLocalTarget(assets,entry);source={type:'folder',path:assets,entry,url,label:p.label+' · APK éditable'}}else{const android=detectAndroidProject(p.decoded);const preview=await buildAndroidPreview(android);source={type:'android-project',path:p.decoded,url:preview.url,label:p.label+' · APK décodé',nativeKind:preview.nativeKind,nativeFile:preview.nativeFile,nativePreviewProfile:preview.nativePreviewProfile,nativeScreens:preview.nativeScreens}}
+ try{const policy=JSON.parse(fs.readFileSync(path.join(assets,'android-window-profile.json'),'utf8'));if(policy.schema===1&&['inset','overlay'].includes(policy.systemBarsLayout))source.androidWindowProfile=policy}catch{}
+ source.apkProject={id:p.id,package:p.package,label:p.label};source.previewFidelity='resources';return {ok:true,source};
+ }catch(error){if(path.extname(file).toLowerCase()==='.apk'&&fs.existsSync(file)){const id=crypto.randomUUID();runtimeApks.set(id,fs.realpathSync(file));return {ok:true,source:{type:'apk-runtime-only',url:'about:blank',label:path.basename(file),runtimeApkId:id,editError:String(error.message)}}}return {ok:false,error:String(error.message)}}
+}
+ipcMain.handle('apk:command',async(event,p)=>{if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine APK refusée'};try{return {ok:true,...await apkEditor.command(p?.action,p?.payload)}}catch(e){return {ok:false,error:e.message}}});
+ipcMain.handle('android:open',async(event,options)=>{
+ if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false};
+ if(options?.pickApk===true){const r=await dialog.showOpenDialog(mainWindow,{title:'Ouvrir un APK Android',properties:['openFile'],filters:[{name:'APK Android',extensions:['apk']}]});if(r.canceled)return {ok:false,canceled:true};return openApkFile(r.filePaths[0])}
+ if(options?.source?.apkProject||options?.source?.runtimeApkId){try{const src=options.source;const file=src.apkProject?(()=>{const p=apkEditor.project(src.apkProject.id);return options.useExport&&p.lastExport&&fs.existsSync(p.lastExport)?p.lastExport:path.join(p.dir,'original.apk')})():runtimeApks.get(src.runtimeApkId);if(!file)throw Error('APK ouvert introuvable.');const selected=await androidLabBackend.selectApk(file);await openAndroidWindow();await androidWindow.webContents.executeJavaScript('window.showSelectedApk('+JSON.stringify(selected)+');window.refreshFromStudio?.()');return {ok:true,package:selected.apk.package}}catch(e){return {ok:false,error:e.message}}}
+ return openAndroidWindow();
+});
+
+function chatProjectRoot(source){if(!source||!['folder','html','android-project'].includes(source.type))throw Error('Ouvrir une application locale éditable.');if(source.apkProject){const p=apkEditor.project(source.apkProject.id);const root=source.type==='folder'?path.join(p.decoded,'assets'):p.decoded;if(fs.realpathSync(source.path)!==fs.realpathSync(root))throw Error('Projet APK incohérent.');return root}return source.type==='html'?path.dirname(source.path):source.path}
+const chatGptDirect=require('./chatgpt-direct.cjs').create({app,safeStorage,shell,notify:p=>mainWindow?.webContents.send('chatgpt:account-status',p)});
+require('./chatgpt-project.cjs').register({app,ipcMain,clipboard,dialog,getWindow:()=>mainWindow,rootFor:chatProjectRoot,direct:chatGptDirect});
+require('./chatgpt-window.cjs').register({ipcMain,WebContentsView,shell,getWindow:()=>mainWindow});
+
+if(process.env.AIS_WORKSPACE_TEST==='1')ipcMain.handle('studio:test-source',async (_event,file)=>file?openApkFile(file):{ok:true,source:{type:'folder',path:webRoot(),url:await startLocalTarget(webRoot(),'index.html'),label:'Radio intelligente'}});

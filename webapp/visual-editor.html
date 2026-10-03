@@ -129,7 +129,8 @@ body.preview-mode .persistent-guides,body.android-mode .persistent-guides{displa
 .android-nav{bottom:0;height:var(--android-nav);background:var(--android-nav-color);align-items:center;justify-content:center}
 .android-nav::after{content:"";width:92px;height:4px;border-radius:999px;background:#fff;opacity:.92}
 .device.android-exact .android-status,.device.android-exact .android-nav{display:flex}
-.device.android-exact iframe{position:absolute;left:0;right:0;top:var(--android-status);height:calc(100% - var(--android-status) - var(--android-nav))}
+.device.android-exact iframe{position:absolute;left:var(--android-left,0px);right:var(--android-right,0px);width:calc(100% - var(--android-left,0px) - var(--android-right,0px));top:var(--android-status);height:calc(100% - var(--android-status) - var(--android-nav))}
+.android-status,.android-nav{overflow:hidden}.android-buttons{display:none;font-size:23px;word-spacing:30px}.device.android-three-button .android-buttons{display:block}.device.android-three-button .android-nav::after{display:none}.device.android-exact .android-nav{pointer-events:auto}.device.android-overlay iframe{top:0;left:0;right:0;width:100%;height:100%}
 iframe{display:block;width:100%;height:100%;border:0;background:white}
 
 .preview-exit{display:none;position:fixed;z-index:2000;right:16px;top:16px;padding:8px 11px;border:1px solid #ffffff55;border-radius:999px;background:#21182fd9;color:#fff;font-size:.72rem;font-weight:800;box-shadow:0 8px 24px #0004}
@@ -269,7 +270,7 @@ kbd{padding:2px 5px;border:1px solid #d7d0df;border-bottom-width:2px;border-radi
 .source-url>span{font-size:.68rem;color:var(--muted)}
 .source-url>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
 .source-url input{min-height:40px;padding:0 11px;border:1px solid var(--line);border-radius:10px}
-.source-choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.source-choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
 .source-choice{min-height:104px;padding:14px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(180deg,#fff,#faf8fc);text-align:left;color:#4d3f58;transition:.16s ease;box-shadow:0 4px 12px rgba(43,30,68,.03)}
 .source-choice:hover{transform:translateY(-2px);border-color:#baa4d6;background:#fff;box-shadow:0 12px 26px rgba(55,36,88,.1)}
 .source-choice b{display:block;margin-bottom:6px;color:#6030ad;font-size:.8rem}
@@ -453,6 +454,7 @@ body.desktop .desktop-badge{display:inline-flex}
   .top-actions{margin-left:0;width:100%}
 }
 </style>
+<link rel="stylesheet" href="studio-workspace.css">
 </head>
 <body>
 <header>
@@ -479,7 +481,7 @@ body.desktop .desktop-badge{display:inline-flex}
   <div class="mode-switch" id="modeSwitch">
     <button class="btn active" data-preview-mode="edit">Édition</button>
     <button class="btn" data-preview-mode="preview">Aperçu plein écran</button>
-    <button class="btn" data-preview-mode="android">Android exact</button>
+    <button class="btn" data-preview-mode="android">Simulation Android</button>
   </div>
 
   <div class="top-actions">
@@ -487,9 +489,11 @@ body.desktop .desktop-badge{display:inline-flex}
     <button class="btn desktop-only" id="saveProjectBtn">Enregistrer</button>
     <button class="btn primary desktop-only" id="exportChatGPTBtn">Exporter pour ChatGPT</button>
     <button class="btn desktop-only" id="openAsAppBtn">Ouvrir comme appli</button>
+    <button class="btn desktop-only" id="apkFilesBtn" disabled>Fichiers APK</button><button class="btn primary desktop-only" id="exportApkBtn" disabled>Exporter APK signé</button><button class="btn desktop-only" id="apkToolsBtn">Outils APK</button>
+    <button class="btn desktop-only" id="openAndroidLabBtn">APK / téléphone réel</button>
     <button class="btn" id="commandsBtn">⌘ Commandes</button>
     <button class="btn" id="settingsBtn">⚙ Paramètres</button>
-    <button class="btn" id="reloadBtn">Recharger</button>
+    <button class="btn desktop-only" id="studioChatBtn">ChatGPT</button><button class="btn desktop-only" id="realApkBtn" hidden>Rendu APK sur Android réel</button><button class="btn" id="reloadBtn">Recharger</button>
   </div>
 </header>
 
@@ -530,10 +534,11 @@ body.desktop .desktop-badge{display:inline-flex}
     </label>
     <div class="source-choice-grid">
       <button class="source-choice" id="openFolderBtn"><b>📁 Dossier local</b><span>PWA/HTML ou projet Android natif XML / Compose</span></button>
-      <button class="source-choice" id="openHtmlBtn"><b>📄 Fichier HTML</b><span>Choisir directement la page principale</span></button>
-      <button class="source-choice" id="openDemoBtn"><b>✦ Démo intégrée</b><span>Tester avec Radio intelligente</span></button>
+      <button class="source-choice" id="openHtmlBtn"><b>📄 Fichier HTML / APK</b><span>Choisir une page HTML ou un APK Android</span></button>
+      <button class="source-choice desktop-only" id="openApkBtn"><b>▯ Fichier APK Android</b><span>Importer, modifier et reconstruire un APK installable</span></button>
+      <button class="source-choice desktop-only" id="openPhoneApkBtn"><b>Application du téléphone USB</b><span>Importer l’APK affiché sur le téléphone et comparer sa capture réelle</span></button><button class="source-choice" id="openDemoBtn"><b>✦ Démo intégrée</b><span>Tester avec Radio intelligente</span></button>
     </div>
-    <div class="native-note"><b>Applications natives :</b> un dossier Android avec sources est maintenant détecté et prévisualisé en mode XML/Compose. Une APK/EXE fermée sans source reste non éditable directement.</div>
+    <div class="native-note"><b>Applications natives :</b> un dossier Android avec sources est maintenant détecté et prévisualisé en mode XML/Compose. Les APK sont décodés pour modifier leurs ressources et interfaces Web ; le code natif reste disponible sous forme Smali.</div>
     <div class="status" id="sourceStatus"></div>
   </div>
 </div>
@@ -687,8 +692,8 @@ body.desktop .desktop-badge{display:inline-flex}
       <div class="ruler-y" id="rulerY"></div>
       <div class="device" id="device">
         <div class="android-status" id="androidStatus"><span id="androidClock">12:00</span><span class="icons">● ◒ ▰</span></div>
-        <iframe id="appFrame" title="Aperçu de l'application" src="about:blank"></iframe>
-        <div class="android-nav" id="androidNav"></div>
+        <div id="nativeRenderGate" hidden style="position:absolute;inset:0;z-index:200;background:#f8f5ff;display:none;align-items:center;justify-content:center;text-align:center;padding:30px"><div style="max-width:520px"><h2>Voir cette application sur Android</h2><p>L’aperçu local ne lance pas le code Android de cet APK. Le rendu Android réel affiche l’application exécutée, ses images et ses barres système.</p><button class="btn" id="nativeRealBtn">Afficher le rendu Android réel</button><button class="btn" id="nativeResourcesBtn">Éditer l’interface / les ressources · aperçu local</button><p id="nativeRenderStatus" style="font-size:13px"></p></div></div><iframe id="appFrame" title="Aperçu de l'application" src="about:blank"></iframe>
+        <div class="android-nav" id="androidNav" title="Zone réservée aux commandes système Android"><span class="android-buttons">Ⅲ　　▢　　‹</span></div>
         <div class="column-grid-overlay" id="columnGridOverlay"></div>
         <div class="layout-grid-overlay" id="layoutGridOverlay"></div>
         <div class="safe-outline" id="safeOutline"><span>zone sûre</span></div>
@@ -735,6 +740,8 @@ body.desktop .desktop-badge{display:inline-flex}
           <option value="iphone-island">iPhone · Dynamic Island</option>
         </select></div>
       </div>
+<div class="fields"><div class="field"><label>Navigation Android</label><select id="androidNavigationMode"><option value="three-button">3 boutons</option><option value="gesture">Gestes</option></select></div><div class="field"><label>Contenu / barres système</label><select id="androidBarsLayout"><option value="overlay">Android 15/16 · derrière les barres</option><option value="inset">Entre les barres · ancien conteneur</option></select></div></div><p style="font-size:.72rem">Simulation : les médias et l’état peuvent différer du téléphone. Pour le rendu réel de tout APK, utiliser « Aperçu APK sur Android réel ». Pour les mêmes données, afficher le téléphone connecté.</p>
+      <label class="checkline"><input id="androidBoundsInEdit" type="checkbox" checked> Afficher les limites Android pendant l’édition</label><div class="fields"><div class="field"><label>Barre du haut · px CSS</label><input id="androidTopInset" type="number" min="0" max="200" value="28"></div><div class="field"><label>Barre du bas · px CSS</label><input id="androidBottomInset" type="number" min="0" max="200" value="48"></div></div><div class="fields"><div class="field"><label>Limite gauche · px CSS</label><input id="androidLeftInset" type="number" min="0" max="200" value="0"></div><div class="field"><label>Limite droite · px CSS</label><input id="androidRightInset" type="number" min="0" max="200" value="0"></div></div><button class="btn desktop-only" id="measureAndroidBtn" type="button">Mesurer l’écran Android connecté</button><button class="btn desktop-only" id="calibrateScreenshotBtn" type="button">Calibrer depuis une capture</button><p id="sourceFidelity" style="font-size:.72rem"></p><p id="androidGeometryStatus" style="font-size:.72rem">Profil indicatif : 412 × 915, haut 28, bas 48 px CSS. À calibrer pour votre appareil.</p>
       <button class="btn" id="rotateDeviceBtn" type="button" style="width:100%;margin-top:7px">↻ Pivoter portrait / paysage</button>
       <label class="checkline"><input id="smartGuidesPref" type="checkbox" checked> Guides intelligents : centre, parent, zone sûre et objets proches</label>
       <label class="checkline"><input id="gridOverlayToggle" type="checkbox"> Afficher la grille d’accrochage dans l’écran</label>
@@ -1026,7 +1033,8 @@ body.desktop .desktop-badge{display:inline-flex}
     <section class="card desktop-only" id="nativeAndroidCard">
       <h2>Android natif <small>XML / Compose</small></h2>
       <div class="native-status" id="nativeStatus">Ouvre un dossier Android pour activer ce mode.</div>
-      <div class="native-list" id="nativeList"></div>
+      <div class="field" id="nativeScreenField" hidden><label>Écran natif à modifier</label><select id="nativeScreenSelect"></select></div>
+        <div class="native-list" id="nativeList"></div>
       <div class="fields" style="margin-top:8px">
         <div class="field"><label>Propriété</label><select id="nativeProperty">
           <option value="text">Texte</option><option value="textSize">Taille texte</option><option value="padding">Padding</option><option value="margin">Margin</option><option value="width">Largeur</option><option value="height">Hauteur</option><option value="background">Fond</option><option value="gravity">Gravity</option>
@@ -2242,16 +2250,16 @@ body.desktop .desktop-badge{display:inline-flex}
   function androidInsets(){
     var size=currentDeviceSize();
     if(selectedDeviceKind==='tv')return {top:0,right:0,bottom:0,left:0};
-    if(selectedDeviceKind==='tablet'||size.width>=700)return {top:24,right:0,bottom:24,left:0};
-    return {top:28,right:0,bottom:24,left:0};
+    return {top:Math.max(0,Number(document.getElementById('androidTopInset').value)||0),right:Math.max(0,Number(document.getElementById('androidRightInset').value)||0),bottom:Math.max(0,Number(document.getElementById('androidBottomInset').value)||0),left:Math.max(0,Number(document.getElementById('androidLeftInset').value)||0)};
   }
 
   function previewProfile(){
-    var s=currentPreviewMode==='android'?androidInsets():safeAreaValues();
+    var s=(currentPreviewMode==='android'||device.classList.contains('android-exact'))?androidInsets():safeAreaValues();
     return {
       topInset:s.top||0,rightInset:s.right||0,bottomInset:s.bottom||0,leftInset:s.left||0,
-      statusBarColor:isRadioSource()?'#6f42c1':'#111111',
-      navigationBarColor:'#000000',
+      simulateAndroid:device.classList.contains('android-exact'),systemBarsLayout:document.getElementById('androidBarsLayout').value,navigationMode:document.getElementById('androidNavigationMode').value,
+      statusBarColor:document.getElementById('androidBarsLayout').value==='overlay'?'transparent':(isRadioSource()?'#6f42c1':'#111111'),
+      navigationBarColor:document.getElementById('androidBarsLayout').value==='overlay'?'rgba(0,0,0,.78)':'#000000',
       backgroundColor:'#ffffff'
     };
   }
@@ -2299,17 +2307,17 @@ body.desktop .desktop-badge{display:inline-flex}
     currentPreviewMode=mode;
     document.body.classList.toggle('preview-mode',mode==='preview');
     document.body.classList.toggle('android-mode',mode==='android');
-    device.classList.toggle('android-exact',mode==='android');
+    device.classList.toggle('android-exact',mode==='android'||(mode==='edit'&&document.getElementById('androidBoundsInEdit').checked&&(selectedDeviceKind==='smartphone'||selectedDeviceKind==='tablet'||selectedDeviceKind==='custom')));device.classList.toggle('android-overlay',document.getElementById('androidBarsLayout').value==='overlay');device.classList.toggle('android-three-button',document.getElementById('androidNavigationMode').value==='three-button');
     document.querySelectorAll('[data-preview-mode]').forEach(function(btn){
       btn.classList.toggle('active',btn.dataset.previewMode===mode);
     });
 
-    if(mode==='android'){
+    if(device.classList.contains('android-exact')){
       var a=androidInsets();
       device.style.setProperty('--android-status',a.top+'px');
-      device.style.setProperty('--android-nav',a.bottom+'px');
-      device.style.setProperty('--android-status-color',isRadioSource()?'#6f42c1':'#111111');
-      device.style.setProperty('--android-nav-color','#000000');
+      device.style.setProperty('--android-nav',a.bottom+'px');device.style.setProperty('--android-left',a.left+'px');device.style.setProperty('--android-right',a.right+'px');
+      device.style.setProperty('--android-status-color',previewProfile().statusBarColor);
+      device.style.setProperty('--android-nav-color',previewProfile().navigationBarColor);
     }
 
     if(mode==='edit')post('enable');
@@ -2338,7 +2346,7 @@ body.desktop .desktop-badge{display:inline-flex}
       androidExact:useAndroid,
       profile:useAndroid?Object.assign({},previewProfile(),androidInsets()):previewProfile()
     });
-    if(result&&result.ok)setStatus('Fenêtre application ouverte en '+result.width+' × '+result.height+(result.androidExact?' · Android exact':'')+'.');
+    if(result&&result.ok)setStatus('Fenêtre application ouverte en '+result.width+' × '+result.height+(result.androidExact?' · Simulation Android':'')+'.');
     else if(result&&result.error)setStatus(result.error,true);
   }
 
@@ -2360,7 +2368,7 @@ body.desktop .desktop-badge{display:inline-flex}
   }
 
   function safeAreaValues(){
-    if(currentPreviewMode==='android'){
+    if(currentPreviewMode==='android'||device.classList.contains('android-exact')){
       /* Le WebView natif est déjà dimensionné entre les barres système :
          ne pas appliquer une deuxième fois ces insets à son contenu. */
       return {profile:'android-exact',top:0,right:0,bottom:0,left:0,notch:'none'};
@@ -2467,14 +2475,14 @@ body.desktop .desktop-badge{display:inline-flex}
     if(currentPreviewMode!=='edit'){
       z=Math.min(window.innerWidth/w,window.innerHeight/h);
     }else if(zoom.value==='fit'){
-      var availW=Math.max(240,(workspace&&workspace.clientWidth||window.innerWidth)-82);
-      var availH=Math.max(240,(workspace&&workspace.clientHeight||window.innerHeight)-82);
-      z=Math.min(availW/w,availH/h,1.5);
+      var availW=Math.max(40,(workspace&&workspace.clientWidth||window.innerWidth)-82);
+      var availH=Math.max(40,(workspace&&workspace.clientHeight||window.innerHeight)-82);
+      z=Math.min(availW/w,availH/h,1);
     }else{
       z=Number(zoom.value);
     }
     if(!Number.isFinite(z)||z<=0)z=1;
-    z=Math.max(.2,z);
+    z=Math.max(.05,z);
     device.style.width=w+'px';
     device.style.height=h+'px';
     device.style.transform='scale('+z+')';
@@ -2490,10 +2498,10 @@ body.desktop .desktop-badge{display:inline-flex}
       stage.style.width=(w*z)+'px';
       stage.style.height=(h*z)+'px';
     }
-    if(currentPreviewMode==='android'){
+    if(device.classList.contains('android-exact')){
       var a=androidInsets();
       device.style.setProperty('--android-status',a.top+'px');
-      device.style.setProperty('--android-nav',a.bottom+'px');
+      device.style.setProperty('--android-nav',a.bottom+'px');device.style.setProperty('--android-left',a.left+'px');device.style.setProperty('--android-right',a.right+'px');
     }
     applySafeArea();
     renderGridOverlay();
@@ -3223,6 +3231,7 @@ body.desktop .desktop-badge{display:inline-flex}
     });
   }
 
+  document.getElementById('nativeScreenSelect').addEventListener('change',function(){frame.contentWindow.postMessage({type:'studio-native-screen',id:this.value},'*')});
   async function refreshNativeTree(){
     selectedNativeNode=null;
     if(!currentSource||currentSource.type!=='android-project'){
@@ -4467,7 +4476,7 @@ body.desktop .desktop-badge{display:inline-flex}
       source:currentSource,
       branch:targetBranch,
       title:document.getElementById('gitTitle').value,
-      body:'Modifications visuelles générées avec App Interface Studio 6.63.'
+      body:'Modifications visuelles générées avec App Interface Studio 6.68.'
     });
     if(!result||!result.ok){gitStatusText.textContent=result&&result.error||'Publication impossible.';return}
     var cleanNote=result.assetScanTruncated
@@ -4840,7 +4849,7 @@ body.desktop .desktop-badge{display:inline-flex}
     var failed=checks.filter(function(x){return !x.ok}).length;
     finalControlStatus.textContent=checks.length+' contrôles · '+(checks.length-failed)+' sans anomalie · '+failed+' à vérifier.';
     lastFinalControlData={
-      version:'6.63.0',
+      version:'6.70.0',
       generatedAt:new Date().toISOString(),
       source:{label:currentSource&&currentSource.label||'',url:currentSource&&currentSource.url||'',type:currentSource&&currentSource.type||''},
       checks:JSON.parse(JSON.stringify(checks)),
@@ -4941,14 +4950,14 @@ body.desktop .desktop-badge{display:inline-flex}
   function decorateProjectForStorage(project){
     project=project||{};
     project.source=currentSource;
-    project.preview={mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value};
+    project.preview={mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value,androidNavigationMode:document.getElementById('androidNavigationMode').value,androidBarsLayout:document.getElementById('androidBarsLayout').value,androidBoundsInEdit:document.getElementById('androidBoundsInEdit').checked,androidLeftInset:Number(document.getElementById('androidLeftInset').value),androidRightInset:Number(document.getElementById('androidRightInset').value),androidTopInset:Number(document.getElementById('androidTopInset').value),androidBottomInset:Number(document.getElementById('androidBottomInset').value)};
     project.namedVersions=namedVersions.map(function(v){return {id:v.id,name:v.name,createdAt:v.createdAt,project:v.project,thumbnail:v.thumbnail||null}});
     project.hostPreferences=JSON.parse(JSON.stringify(prefs||{}));
     project.regressionBaseline=regressionBaseline||null;
     project.performanceBaseline=performanceBaseline||null;
     project.namedScenarios=JSON.parse(JSON.stringify(namedScenarios||[]));
     project.referenceCapture=referenceOverlay&&referenceOverlay.getAttribute('src')||'';
-    project.studio={name:'App Interface Studio',version:'6.63.0'};
+    project.studio={name:'App Interface Studio',version:'6.70.0'};
     return project;
   }
 
@@ -4975,7 +4984,8 @@ body.desktop .desktop-badge{display:inline-flex}
       if(project.preview.size&&preset.value==='custom'){
         screenCustomW.value=project.preview.size.width||412;screenCustomH.value=project.preview.size.height||915;
       }
-      if(project.preview.safeProfile)safeProfile.value=project.preview.safeProfile;
+      if(project.preview.safeProfile)safeProfile.value=project.preview.safeProfile;for(const id of ['androidNavigationMode','androidBarsLayout'])if(project.preview[id]&&Array.from(document.getElementById(id).options).some(o=>o.value===project.preview[id]))document.getElementById(id).value=project.preview[id];
+      if(project.preview.androidBoundsInEdit!=null)document.getElementById('androidBoundsInEdit').checked=project.preview.androidBoundsInEdit;if(project.preview.androidLeftInset!=null)document.getElementById('androidLeftInset').value=project.preview.androidLeftInset;if(project.preview.androidRightInset!=null)document.getElementById('androidRightInset').value=project.preview.androidRightInset;if(project.preview.androidTopInset!=null)document.getElementById('androidTopInset').value=project.preview.androidTopInset;if(project.preview.androidBottomInset!=null)document.getElementById('androidBottomInset').value=project.preview.androidBottomInset;
       await setPreviewMode(project.preview.mode||'edit');
     }
     if(project.environment){
@@ -5018,6 +5028,7 @@ body.desktop .desktop-badge{display:inline-flex}
   }
 
   async function saveProject(){
+    if(currentSource?.apkProject)await window.ApkEditorUi.savePending();
     var project=await requestProject();
     if(!project){setStatus('Projet non récupéré.',true);return}
     decorateProjectForStorage(project);
@@ -5059,9 +5070,9 @@ body.desktop .desktop-badge{display:inline-flex}
     var project=await requestProject();
     if(!project){setStatus('Projet non récupéré.',true);return}
     project.source=currentSource;
-    project.preview={mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value};
+    project.preview={...project.preview,mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value,androidLeftInset:Number(document.getElementById('androidLeftInset').value),androidRightInset:Number(document.getElementById('androidRightInset').value),androidTopInset:Number(document.getElementById('androidTopInset').value),androidBottomInset:Number(document.getElementById('androidBottomInset').value),androidBoundsInEdit:document.getElementById('androidBoundsInEdit').checked};
     project.namedVersions=namedVersions.map(function(v){return {id:v.id,name:v.name,createdAt:v.createdAt}});
-    project.studio={name:'App Interface Studio',version:'6.63.0'};
+    project.studio={name:'App Interface Studio',version:'6.70.0'};
     var text=projectPrompt(project);
     if(copyOnly){
       if(desktop)await desktop.copyText(text);
@@ -5170,7 +5181,7 @@ body.desktop .desktop-badge{display:inline-flex}
     {label:'Ajouter un repère horizontal au centre de la sélection',hint:'Alt+Maj+H',run:function(){addGuideAtSelection('y')}},
     {label:'Mode Édition',hint:'',run:function(){setPreviewMode('edit')}},
     {label:'Aperçu plein écran',hint:'',run:function(){setPreviewMode('preview')}},
-    {label:'Android exact',hint:'',run:function(){setPreviewMode('android')}},
+    {label:'Simulation Android',hint:'',run:function(){setPreviewMode('android')}},
     {label:'Comparer plusieurs écrans',hint:'',run:openMultiPreview},
     {label:'Analyser l’interface',hint:'',run:function(){post('audit')}},
     {label:'Réparer avec aperçu',hint:'',run:function(){post('repair-suggest');repairModal.classList.add('visible')}},
@@ -5283,7 +5294,7 @@ body.desktop .desktop-badge{display:inline-flex}
       if(data.type==='ready')sendMultiProject(multiRec);
       return;
     }
-    if(multiRec===activeMultiRec&&data.type==='ready'){
+    if(multiRec&&multiRec===activeMultiRec&&data.type==='ready'){
       sendMultiProject(multiRec);
       return;
     }
@@ -5493,7 +5504,7 @@ body.desktop .desktop-badge{display:inline-flex}
   });
   zoom.addEventListener('change',setDevice);
   ['rotateDeviceBtn','rotateDeviceBtn2'].forEach(function(id){var btn=document.getElementById(id);if(btn)btn.addEventListener('click',rotateDevice)});
-  safeProfile.addEventListener('change',applySafeArea);
+  safeProfile.addEventListener('change',applySafeArea);for(const id of ['androidNavigationMode','androidBarsLayout','androidTopInset','androidBottomInset','androidLeftInset','androidRightInset','androidBoundsInEdit'])document.getElementById(id).addEventListener('change',()=>{if(id==='androidNavigationMode')document.getElementById('androidBottomInset').value=document.getElementById(id).value==='gesture'?24:48;setPreviewMode(currentPreviewMode);scheduleRecovery()});
   screenCustomW.addEventListener('input',function(){customDeviceWidth.value=screenCustomW.value;setDevice()});
   screenCustomH.addEventListener('input',function(){customDeviceHeight.value=screenCustomH.value;setDevice()});
   customDeviceWidth.addEventListener('input',function(){screenCustomW.value=customDeviceWidth.value;if(selectedDeviceKind==='custom')setDevice()});
@@ -5962,7 +5973,13 @@ body.desktop .desktop-badge{display:inline-flex}
   async function loadSource(source){
     if(!source||!source.url)return false;
     await closeMultiPreview();
-    currentSource=source;
+    document.getElementById('nativeScreenField').hidden=!(source.nativeScreens?.length);var ns=document.getElementById('nativeScreenSelect');ns.replaceChildren();(source.nativeScreens||[]).forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.label||s.id;o.selected=!s.hidden;ns.append(o)});if(source.nativeScreens?.length)ns.value=(source.nativeScreens.find(s=>!s.hidden)||source.nativeScreens[0]).id;
+    currentSource=source;window.StudioWorkspace?.setSource(source);window.StudioChatGpt?.setSource(source);document.getElementById('realApkBtn').hidden=!(source.apkProject||source.runtimeApkId);var gate=document.getElementById('nativeRenderGate');gate.hidden=!(source.runtimeApkId||source.type==='android-project');gate.style.display=gate.hidden?'none':'flex';document.getElementById('nativeResourcesBtn').hidden=!!source.runtimeApkId;document.getElementById('nativeRenderStatus').textContent=source.editError?'Ressources non éditables : '+source.editError:'Les ressources XML restent accessibles, mais cet aperçu ne constitue pas le rendu Android.';window.ApkEditorUi?.setProject(source.apkProject);
+    if(source.androidWindowProfile)document.getElementById('androidBarsLayout').value=source.androidWindowProfile.systemBarsLayout;
+    document.getElementById('openAsAppBtn').textContent='Ouvrir comme appli';
+    document.getElementById('sourceFidelity').textContent=source.type==='bundled-demo'?'Démo locale : version et données différentes du téléphone':'Source locale ouverte. Calibrer les dimensions pour correspondre à votre appareil.';
+    if(source.nativePreviewProfile){var np=source.nativePreviewProfile;preset.value='custom';screenCustomW.value=np.width;screenCustomH.value=np.height;zoom.value='fit';selectedDeviceKind=np.deviceKind||'custom';document.getElementById('androidTopInset').value=np.topInset;document.getElementById('androidBottomInset').value=np.bottomInset;document.getElementById('androidLeftInset').value=np.leftInset||0;document.getElementById('androidRightInset').value=np.rightInset||0;document.getElementById('androidBarsLayout').value='inset';setDevice();document.getElementById('sourceFidelity').textContent='Aperçu des ressources XML : orientation et style importés. Les photos personnelles et les changements calculés par le code nécessitent Android réel.';}
+    if(source.phone?.profile)applyAndroidGeometry(source.phone.profile,'Mesures du téléphone');
     pendingDirectDiff=null;pendingNativeDiff=null;pendingDiffKind=null;
     await setPreviewMode('edit');
     document.getElementById('sourceName').textContent=source.label||source.url||'Application';
@@ -5978,8 +5995,8 @@ body.desktop .desktop-badge{display:inline-flex}
     directSourceStatus.textContent=source.type==='android-project'
       ? 'Projet Android natif : utilise le panneau Android natif pour modifier XML/Compose avec diff.'
       : (['folder','html'].indexOf(source.type)>=0?'Sélectionne un objet puis prépare le diff de sa vraie règle CSS.':'L’édition source directe nécessite une source locale.');
-    frame.src=source.url;
-    var ready=await waitForReady(8000);
+    var editorUrl=new URL(source.url,location.href);editorUrl.searchParams.set('visual-editor','1');frame.src=editorUrl.href;
+    var ready=source.type==='apk-runtime-only'?true:await waitForReady(8000);
     if(!ready)setStatus('Application chargée, mais le moteur d’édition n’a pas répondu. Clique sur Recharger pour relancer l’injection.',true);
     else setStatus(source.type==='android-project'?'Projet Android natif chargé : sélection visuelle + édition source XML/Compose.':'Éditeur prêt : clique directement sur un élément de l’application.');
     await refreshNativeTree();
@@ -5987,12 +6004,15 @@ body.desktop .desktop-badge{display:inline-flex}
     return ready;
   }
 
+  async function showCurrentApk(){if(!currentSource)return;var r=await desktop.openAndroidLab({source:currentSource,useExport:true});if(!r?.ok)document.getElementById('nativeRenderStatus').textContent=r?.error||'Rendu Android indisponible.';}
+  document.getElementById('realApkBtn').onclick=showCurrentApk;document.getElementById('nativeRealBtn').onclick=showCurrentApk;document.getElementById('nativeResourcesBtn').onclick=function(){var g=document.getElementById('nativeRenderGate');g.hidden=true;g.style.display='none'};document.getElementById('studioChatBtn').onclick=()=>window.StudioChatGpt?.open();
+  window.addEventListener('load',()=>window.StudioChatGpt?.setProvider(async()=>({selection:lastState||null,simulationSelection:window.StudioWorkspace?.getSelection(),css:cssOut.value}),async source=>{var r=await desktop.restoreSource(source);if(!r?.ok)throw Error(r?.error||'Rechargement impossible.');await loadSource(r.source)}));
   async function chooseUrl(){
     if(!desktop)return;
     var input=document.getElementById('sourceUrlInput');
     setSourceStatus('Ouverture…');
     var result=await desktop.openUrl(input.value);
-    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    if(result&&result.ok){setSourceStatus('');if(!result.android)await loadSource(result.source)}
     else if(result&&result.error)setSourceStatus(result.error,true);
   }
 
@@ -6000,22 +6020,43 @@ body.desktop .desktop-badge{display:inline-flex}
     if(!desktop)return;
     setSourceStatus('Ouverture du dossier…');
     var result=await desktop.pickFolder();
-    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    if(result&&result.ok){setSourceStatus('');if(!result.android)await loadSource(result.source)}
     else if(result&&result.error)setSourceStatus(result.error,true);
   }
 
+  async function chooseApk(){if(!desktop)return;await window.ApkEditorUi.savePending();setSourceStatus('Décodage de l’APK…');var r=await desktop.openApk();if(r?.ok){setSourceStatus('');await loadSource(r.source)}else setSourceStatus(r?.error||'Ouverture annulée.',!!r?.error)}
+  window.addEventListener('studio-open-apk',chooseApk);
+  window.addEventListener('studio-export-apk',async()=>{
+    if(!currentSource?.apkProject)return;
+    try{await window.ApkEditorUi.savePending();if(currentSource.type==='folder'){const project=await requestProject();if(!project)throw Error('Modifications visuelles non récupérées.');const applied=await desktop.applyCssToSource({source:currentSource,css:project.css||cssOut.value,generatedNodes:project.snapshot?.generatedNodes||[],domPatches:projectDomPatches(project),sourceSelectors:projectSourceSelectors(project),prototypeLinks:project.prototypeLinks||{}});if(!applied?.ok)throw Error(applied?.error||'Sauvegarde des modifications impossible.')}
+    await window.ApkEditorUi.exportCurrent();}catch(e){window.ApkEditorUi.report(e.message)}
+  });
   async function chooseHtml(){
     if(!desktop)return;
     setSourceStatus('Ouverture du fichier…');
     var result=await desktop.pickHtml();
-    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    if(result&&result.ok){setSourceStatus('');if(!result.android)await loadSource(result.source)}
     else if(result&&result.error)setSourceStatus(result.error,true);
   }
 
+  document.getElementById('openPhoneApkBtn').addEventListener('click',async function(){
+    setSourceStatus('Import de l’application affichée sur le téléphone…');
+    var result=await desktop.openInstalledApk();
+    if(!result?.ok){setSourceStatus(result?.error||'Import impossible.',true);return}
+    await loadSource(result.source);await setPreviewMode('android');setReferenceImage(result.reference,'Écran réel du téléphone · comparaison avec l’APK importé');setStatus('Même APK importé et dimensions Android récupérées. La capture montre les données réelles ; le contenu modifiable utilise des données locales.');
+  });
+  function applyAndroidGeometry(p,label){
+    selectedDeviceKind='custom';preset.value='custom';screenCustomW.value=customDeviceWidth.value=p.width;screenCustomH.value=customDeviceHeight.value=p.height;
+    if(p.leftInset!=null)document.getElementById('androidLeftInset').value=p.leftInset;if(p.rightInset!=null)document.getElementById('androidRightInset').value=p.rightInset;if(p.topInset!=null)document.getElementById('androidTopInset').value=p.topInset;if(p.bottomInset!=null)document.getElementById('androidBottomInset').value=p.bottomInset;
+    document.getElementById('androidGeometryStatus').textContent=label+' · '+p.width+' × '+p.height+' px CSS · haut '+document.getElementById('androidTopInset').value+' · bas '+document.getElementById('androidBottomInset').value+(p.bottomInset==null?' · barre du bas à confirmer':'');
+    setDevice();setPreviewMode('android');scheduleRecovery();
+  }
+  document.getElementById('measureAndroidBtn').addEventListener('click',async()=>{var r=await desktop.androidGeometry();if(!r.ok){document.getElementById('androidGeometryStatus').textContent=r.error;return}applyAndroidGeometry(r.profile,'Mesures Android '+r.serial)});
+  document.getElementById('calibrateScreenshotBtn').addEventListener('click',async()=>{var r=await desktop.pickReferenceImage();if(r?.ok)window.AndroidScreenCalibration.open(r.dataUrl,p=>{applyAndroidGeometry(p,'Calibré sur la capture');setReferenceImage(r.dataUrl,'Capture utilisée pour la géométrie')},currentDeviceSize().width)});
   async function chooseDemo(){
     if(!desktop)return;
     var result=await desktop.openDemo();
-    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    if(result&&result.ok){setSourceStatus('');if(!result.android)await loadSource(result.source)}
   }
 
   document.querySelectorAll('[data-device-kind]').forEach(function(btn){
@@ -6130,8 +6171,11 @@ body.desktop .desktop-badge{display:inline-flex}
     frame.src=currentSource.url;
   }
 
+  window.StudioHost={getSource:()=>currentSource,loadSource,select:selector=>post('select-selector',{selector}),fitEditor:()=>{if(window.StudioWorkspace){zoom.value='fit';setDevice();}},context:()=>({selection:lastState,css:cssOut.value,source:currentSource})};
   setDevice();
 })();
 </script>
+<script>document.addEventListener('DOMContentLoaded',()=>{document.getElementById('openAndroidLabBtn').onclick=()=>window.AppInterfaceStudio?.openAndroidLab();document.getElementById('openApkBtn').onclick=()=>window.dispatchEvent(new Event('studio-open-apk'))});</script><script src="apk-editor-ui.js"></script><script src="android-screen-calibration.js"></script><script src="studio-chatgpt.js"></script>
+<script src="studio-workspace.js"></script>
 </body>
 </html>
