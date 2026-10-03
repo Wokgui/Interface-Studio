@@ -1,0 +1,78 @@
+{
+  "name": "app-interface-studio",
+  "version": "6.63.0",
+  "private": true,
+  "description": "Éditeur visuel universel Windows avec rapport final HTML/JSON autonome, analyse multi-routes, Container Queries complexes, diagnostics i18n/polices/animations, nettoyage CSS sûr, scénarios persistants et tests de performance/réseau",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check ../visual-editor.js && node scripts/check-responsive.cjs",
+    "smoke": "node scripts/run-smoke.cjs",
+    "dist:win": "npm run icon && electron-builder --win portable",
+    "icon": "node scripts/make-icon.cjs"
+  },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "24.13.3",
+    "sharp": "0.33.5",
+    "png-to-ico": "2.1.8"
+  },
+  "build": {
+    "appId": "fr.wokgui.appinterfacestudio",
+    "productName": "App Interface Studio",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "..",
+        "to": "webapp",
+        "filter": [
+          "app-runtime.html",
+          "index.html",
+          "visual-editor.html",
+          "visual-editor.js",
+          "visual-editor.css",
+          "visual-elements.js",
+          "visual-elements.json",
+          "radio-v51.css",
+          "radio-v51.js",
+          "radio-v51-core.js",
+          "music-player.css",
+          "music-player.js",
+          "cloud-backup.js",
+          "manifest.webmanifest",
+          "cover-default.png",
+          "icon-192.png",
+          "icon-512.png",
+          "icon-maskable-192.png",
+          "apple-touch-icon.png",
+          "favicon-32.png",
+          "silence.wav",
+          "vendor/**/*"
+        ]
+      },
+      {
+        "from": "build/icon-512.png",
+        "to": "app-interface-studio-icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "artifactName": "App-Interface-Studio-${version}-portable-${arch}.${ext}"
+  }
+}
