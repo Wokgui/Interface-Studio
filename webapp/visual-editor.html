@@ -485,6 +485,8 @@ body.desktop .desktop-badge{display:inline-flex}
   </div>
 
   <div class="top-actions">
+    <button class="btn primary desktop-only" id="studioCreateApplication">Créer une application</button>
+    <button class="btn desktop-only" id="studioDevelopFormats">Développer multi-formats</button>
     <button class="btn desktop-only" id="openProjectBtn">Ouvrir</button>
     <button class="btn desktop-only" id="saveProjectBtn">Enregistrer</button>
     <button class="btn primary desktop-only" id="exportChatGPTBtn">Exporter pour ChatGPT</button>
@@ -533,6 +535,8 @@ body.desktop .desktop-badge{display:inline-flex}
       <div><input id="sourceUrlInput" type="text" placeholder="https://mon-app.example"><button class="btn primary" id="openUrlBtn">Ouvrir</button></div>
     </label>
     <div class="source-choice-grid">
+      <button class="source-choice desktop-only" id="studioCreateFromStart"><b>Créer une application</b><span>Choisir les formats téléphone, tablette, TV et ordinateur dès le départ.</span></button>
+      <button class="source-choice desktop-only" id="studioOpenGithub"><b>GitHub</b><span>Coller le lien du dépôt et ouvrir sa copie locale.</span></button>
       <button class="source-choice" id="openFolderBtn"><b>📁 Dossier local</b><span>PWA/HTML ou projet Android natif XML / Compose</span></button>
       <button class="source-choice" id="openHtmlBtn"><b>📄 Fichier HTML / APK</b><span>Choisir une page HTML ou un APK Android</span></button>
       <button class="source-choice desktop-only" id="openApkBtn"><b>▯ Fichier APK Android</b><span>Importer, modifier et reconstruire un APK installable</span></button>
@@ -547,6 +551,7 @@ body.desktop .desktop-badge{display:inline-flex}
   <div class="multi-head">
     <div><strong>Comparaison multi-écrans</strong><br><span>Le même projet est rendu simultanément avec ses breakpoints sur plusieurs viewports.</span></div>
     <button class="btn" id="multiSyncBtn">Resynchroniser</button>
+    <label>Modifier <select id="multiEditScope"><option value="base">Base commune · tous les formats</option><option value="format">Adaptation du format actif</option></select></label>
     <button class="btn" id="multiCloseBtn">Fermer</button>
   </div>
   <div class="multi-grid" id="multiPreviewGrid"></div>
@@ -991,6 +996,7 @@ body.desktop .desktop-badge{display:inline-flex}
             <option value="phone">Téléphone · &lt; 600 px</option>
             <option value="tablet">Tablette · 600–1023 px</option>
             <option value="desktop">Grand écran · ≥ 1024 px</option>
+            <option value="tv">TV / très grand écran · ≥ 1600 px</option>
           </select></div>
           <div class="breakpoint-active" id="breakpointActive">actif : téléphone</div>
         </div>
@@ -2524,7 +2530,7 @@ body.desktop .desktop-badge{display:inline-flex}
     var editBp=(p&&p.editingBreakpoint)||breakpointEdit.value||'base';
     if(Array.from(breakpointEdit.options).some(function(o){return o.value===editBp}))breakpointEdit.value=editBp;
     var activeBp=(p&&p.activeBreakpoint)||'phone';
-    breakpointActive.textContent='actif : '+(activeBp==='phone'?'téléphone':activeBp==='tablet'?'tablette':'grand écran');
+    breakpointActive.textContent='actif : '+(activeBp==='phone'?'téléphone':activeBp==='tablet'?'tablette':activeBp==='tv'?'TV / très grand écran':'ordinateur');
 
     var r=base;
     if(editBp!=='base'&&base.breakpoints&&base.breakpoints[editBp])r=base.breakpoints[editBp];
@@ -3678,8 +3684,12 @@ body.desktop .desktop-badge{display:inline-flex}
     postTo(frame,'disable');
     sendMultiProject(rec);
     postTo(rec.iframe,'enable');
+    applyMultiScope();
     setStatus('Édition multi-écrans active : '+rec.name+'. Les outils de droite modifient ce viewport.');
   }
+
+  function applyMultiScope(){if(!activeMultiRec)return;var bp=document.getElementById('multiEditScope').value==='base'?'base':activeMultiRec.width<600?'phone':activeMultiRec.width<1024?'tablet':activeMultiRec.width>=1600?'tv':'desktop';breakpointEdit.value=bp;postTo(activeMultiRec.iframe,'breakpoint-edit',{breakpoint:bp});}
+  document.getElementById('multiEditScope').addEventListener('change',applyMultiScope);
 
   async function syncMultiPreview(){
     if(!multiPreviewModal.classList.contains('visible')||multiSyncBusy)return;
@@ -3703,16 +3713,18 @@ body.desktop .desktop-badge{display:inline-flex}
 
   async function openMultiPreview(){
     if(!currentSource){setStatus('Ouvre d’abord une application.',true);return}
+    if(['android-project','apk-runtime-only'].includes(currentSource.type)){setStatus('Les ressources Android se développent dans l’Éditeur et se vérifient avec Lancer sur Android. La comparaison interactive multi-formats est disponible pour les applications web.',true);return;}
     multiProject=await requestProject();
     if(!multiProject){setStatus('Impossible de préparer la comparaison.',true);return}
     multiProject.source=currentSource;
     multiPreviewGrid.innerHTML='';
     multiFrames=[];
-    var configs=[
+    var configs=window.StudioApplication?.getFormats()||[
       {name:'Téléphone compact',width:360,height:800},
       {name:'Galaxy / grand téléphone',width:412,height:915},
       {name:'Tablette',width:768,height:1024},
-      {name:'Bureau',width:1366,height:768}
+      {name:'Bureau',width:1366,height:768},
+      {name:'TV · 16:9',width:1920,height:1080}
     ];
     configs.forEach(function(cfg){
       var card=document.createElement('div');card.className='multi-card';
@@ -3723,14 +3735,16 @@ body.desktop .desktop-badge{display:inline-flex}
       head.append(title,sizeLabel,editButton);
       var viewport=document.createElement('div');viewport.className='multi-viewport';
       var inner=document.createElement('div');inner.className='multi-inner';
-      var iframe=document.createElement('iframe');iframe.title=cfg.name;iframe.src=currentSource.url;
+      var iframe=document.createElement('iframe');iframe.title=cfg.name;var multiUrl=new URL(currentSource.url,location.href);multiUrl.searchParams.set('visual-editor','1');multiUrl.searchParams.set('__ais_device','1');multiUrl.searchParams.delete('__ais_simulation');iframe.src=multiUrl.href;
       inner.appendChild(iframe);viewport.appendChild(inner);card.append(head,viewport);multiPreviewGrid.appendChild(card);
       var rec={iframe:iframe,viewport:viewport,inner:inner,width:cfg.width,height:cfg.height,name:cfg.name,card:card,editButton:editButton};
+      rec.resizeObserver=new ResizeObserver(function(){fitMultiRecord(rec)});rec.resizeObserver.observe(viewport);
       editButton.addEventListener('click',function(){activateMultiEditor(rec)});
       multiFrames.push(rec);
       requestAnimationFrame(function(){fitMultiRecord(rec)});
     });
     multiPreviewModal.classList.add('visible');
+    document.body.classList.add('multi-development-open');window.StudioChatGpt?.hideView?.(true);
     setTimeout(function(){multiFrames.forEach(fitMultiRecord);if(desktop&&desktop.injectEditor)desktop.injectEditor()},350);
   }
 
@@ -3743,6 +3757,8 @@ body.desktop .desktop-badge{display:inline-flex}
       postTo(frame,'enable');
     }
     multiPreviewModal.classList.remove('visible');
+    document.body.classList.remove('multi-development-open');window.StudioChatGpt?.hideView?.(false);
+    multiFrames.forEach(function(rec){rec.resizeObserver?.disconnect()});
     multiPreviewGrid.innerHTML='';
     multiFrames=[];
     multiProject=null;
@@ -4950,6 +4966,7 @@ body.desktop .desktop-badge{display:inline-flex}
   function decorateProjectForStorage(project){
     project=project||{};
     project.source=currentSource;
+    project.applicationFormats=window.StudioApplication?.getProject()||null;
     project.preview={mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value,androidNavigationMode:document.getElementById('androidNavigationMode').value,androidBarsLayout:document.getElementById('androidBarsLayout').value,androidBoundsInEdit:document.getElementById('androidBoundsInEdit').checked,androidLeftInset:Number(document.getElementById('androidLeftInset').value),androidRightInset:Number(document.getElementById('androidRightInset').value),androidTopInset:Number(document.getElementById('androidTopInset').value),androidBottomInset:Number(document.getElementById('androidBottomInset').value)};
     project.namedVersions=namedVersions.map(function(v){return {id:v.id,name:v.name,createdAt:v.createdAt,project:v.project,thumbnail:v.thumbnail||null}});
     project.hostPreferences=JSON.parse(JSON.stringify(prefs||{}));
@@ -4957,7 +4974,7 @@ body.desktop .desktop-badge{display:inline-flex}
     project.performanceBaseline=performanceBaseline||null;
     project.namedScenarios=JSON.parse(JSON.stringify(namedScenarios||[]));
     project.referenceCapture=referenceOverlay&&referenceOverlay.getAttribute('src')||'';
-    project.studio={name:'App Interface Studio',version:'6.70.0'};
+    project.studio={name:'App Interface Studio',version:'6.83.0'};
     return project;
   }
 
@@ -5022,6 +5039,7 @@ body.desktop .desktop-badge{display:inline-flex}
         applySafeArea();
       }
     }
+    if(project.applicationFormats)window.StudioApplication?.setProject(project.applicationFormats);
     post('load-project',{project:project});
     setStatus('Projet ouvert : '+(label||'projet'));
     return true;
@@ -5072,7 +5090,7 @@ body.desktop .desktop-badge{display:inline-flex}
     project.source=currentSource;
     project.preview={...project.preview,mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value,androidLeftInset:Number(document.getElementById('androidLeftInset').value),androidRightInset:Number(document.getElementById('androidRightInset').value),androidTopInset:Number(document.getElementById('androidTopInset').value),androidBottomInset:Number(document.getElementById('androidBottomInset').value),androidBoundsInEdit:document.getElementById('androidBoundsInEdit').checked};
     project.namedVersions=namedVersions.map(function(v){return {id:v.id,name:v.name,createdAt:v.createdAt}});
-    project.studio={name:'App Interface Studio',version:'6.70.0'};
+    project.studio={name:'App Interface Studio',version:'6.83.0'};
     var text=projectPrompt(project);
     if(copyOnly){
       if(desktop)await desktop.copyText(text);
@@ -5974,7 +5992,7 @@ body.desktop .desktop-badge{display:inline-flex}
     if(!source||!source.url)return false;
     await closeMultiPreview();
     document.getElementById('nativeScreenField').hidden=!(source.nativeScreens?.length);var ns=document.getElementById('nativeScreenSelect');ns.replaceChildren();(source.nativeScreens||[]).forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.label||s.id;o.selected=!s.hidden;ns.append(o)});if(source.nativeScreens?.length)ns.value=(source.nativeScreens.find(s=>!s.hidden)||source.nativeScreens[0]).id;
-    currentSource=source;window.StudioWorkspace?.setSource(source);window.StudioChatGpt?.setSource(source);document.getElementById('realApkBtn').hidden=!(source.apkProject||source.runtimeApkId);var gate=document.getElementById('nativeRenderGate');gate.hidden=!(source.runtimeApkId||source.type==='android-project');gate.style.display=gate.hidden?'none':'flex';document.getElementById('nativeResourcesBtn').hidden=!!source.runtimeApkId;document.getElementById('nativeRenderStatus').textContent=source.editError?'Ressources non éditables : '+source.editError:'Les ressources XML restent accessibles, mais cet aperçu ne constitue pas le rendu Android.';window.ApkEditorUi?.setProject(source.apkProject);
+    currentSource=source;window.StudioApplication?.setSource(source);window.StudioWorkspace?.setSource(source);window.StudioChatGpt?.setSource(source);document.getElementById('realApkBtn').hidden=!(source.apkProject||source.runtimeApkId);var gate=document.getElementById('nativeRenderGate');gate.hidden=!(source.runtimeApkId||source.type==='android-project');gate.style.display=gate.hidden?'none':'flex';document.getElementById('nativeResourcesBtn').hidden=!!source.runtimeApkId;document.getElementById('nativeRenderStatus').textContent=source.editError?'Ressources non éditables : '+source.editError:'Les ressources XML restent accessibles, mais cet aperçu ne constitue pas le rendu Android.';window.ApkEditorUi?.setProject(source.apkProject);
     if(source.androidWindowProfile)document.getElementById('androidBarsLayout').value=source.androidWindowProfile.systemBarsLayout;
     document.getElementById('openAsAppBtn').textContent='Ouvrir comme appli';
     document.getElementById('sourceFidelity').textContent=source.type==='bundled-demo'?'Démo locale : version et données différentes du téléphone':'Source locale ouverte. Calibrer les dimensions pour correspondre à votre appareil.';
@@ -6171,11 +6189,14 @@ body.desktop .desktop-badge{display:inline-flex}
     frame.src=currentSource.url;
   }
 
-  window.StudioHost={getSource:()=>currentSource,loadSource,select:selector=>post('select-selector',{selector}),setViewport:(width,height,kind)=>{if(currentDeviceSize().width===width&&currentDeviceSize().height===height&&selectedDeviceKind===kind)return;preset.value='custom';screenCustomW.value=width;screenCustomH.value=height;customDeviceWidth.value=width;customDeviceHeight.value=height;selectedDeviceKind=kind||'custom';safeProfile.value=kind==='smartphone'?'auto':'none';device.classList.toggle('android-exact',currentPreviewMode==='android'||(document.getElementById('androidBoundsInEdit').checked&&['smartphone','tablet'].includes(kind)));zoom.value='fit';setDevice();},fitEditor:()=>{if(window.StudioWorkspace){zoom.value='fit';setDevice();}},context:()=>({selection:lastState,css:cssOut.value,source:currentSource})};
+  window.StudioHost={getSource:()=>currentSource,loadSource,openMultiPreview,closeMultiPreview,saveProject,requestProject,loadStoredProject,select:selector=>post('select-selector',{selector}),setViewport:(width,height,kind)=>{if(currentDeviceSize().width===width&&currentDeviceSize().height===height&&selectedDeviceKind===kind)return;preset.value='custom';screenCustomW.value=width;screenCustomH.value=height;customDeviceWidth.value=width;customDeviceHeight.value=height;selectedDeviceKind=kind||'custom';safeProfile.value=kind==='smartphone'?'auto':'none';device.classList.toggle('android-exact',currentPreviewMode==='android'||(document.getElementById('androidBoundsInEdit').checked&&['smartphone','tablet'].includes(kind)));zoom.value='fit';setDevice();},fitEditor:()=>{if(window.StudioWorkspace){zoom.value='fit';setDevice();}},context:()=>({selection:lastState,css:cssOut.value,source:currentSource})};
   setDevice();
 })();
 </script>
 <script>document.addEventListener('DOMContentLoaded',()=>{document.getElementById('openAndroidLabBtn').onclick=()=>window.AppInterfaceStudio?.openAndroidLab();document.getElementById('openApkBtn').onclick=()=>window.dispatchEvent(new Event('studio-open-apk'))});</script><script src="apk-editor-ui.js"></script><script src="android-screen-calibration.js"></script><script src="studio-chatgpt.js"></script>
+<script src="studio-formats.js"></script>
+<script src="studio-application.js"></script>
+<script src="studio-native-simulation.js"></script>
 <script src="studio-workspace.js"></script>
 </body>
 </html>

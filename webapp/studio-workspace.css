@@ -18,6 +18,33 @@ body.studio-layout .workspace{flex:1;min-height:0;width:100%;height:auto;padding
 #studioCustomScreen input{width:68px;padding:5px;border:1px solid #ddd3ed;border-radius:5px}
 .studio-simulation-holder[hidden],.studio-native-notice[hidden]{display:none}
 .studio-native-notice{max-width:430px;padding:20px;background:white;border:1px solid #ddd3ed;border-radius:10px;font:14px/1.5 system-ui;color:#30263a}
+.studio-native-runtime{width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;gap:7px}
+.studio-native-runtime[hidden]{display:none}
+.studio-native-actions,.studio-native-keys{display:flex;gap:5px;flex-wrap:wrap;flex:none}
+.studio-native-runtime .btn{font-size:11px;padding:5px 8px;min-height:28px}
+#studioNativeStatus{font-size:12px;line-height:1.4;margin:0;flex:none}
+.studio-native-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.studio-native-holder{position:relative;flex:none}
+#studioNativeCanvas{display:block;transform-origin:top left;background:#15151d;outline-offset:3px;touch-action:none}
+.studio-native-selection{display:none;position:absolute;border:2px solid #9a55eb;pointer-events:none;box-sizing:border-box}
+.studio-application-dialog{width:min(700px,calc(100vw - 32px));max-height:85vh;border:1px solid #d4c9e4;border-radius:16px;padding:24px;background:white;color:#242134;overflow:auto;box-shadow:0 20px 80px #20152e44}
+.studio-application-dialog::backdrop{background:#17131fb3}
+.studio-application-dialog header{display:flex;justify-content:space-between;align-items:center;padding:0!important}
+.studio-application-dialog h2{font-size:20px;margin:0 0 16px}
+.studio-application-dialog label{display:flex;align-items:center;gap:8px;margin:10px 0}
+.studio-application-dialog button,.studio-application-dialog input,.studio-application-dialog select{font:inherit;padding:8px;border:1px solid #ddd3ed;border-radius:6px;max-width:100%}
+.studio-application-dialog button{cursor:pointer;background:#f3edfc;color:inherit}
+.studio-application-dialog input[type=checkbox]{accent-color:#7950cc}
+#studioApplicationFormats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.studio-application-dialog .studio-format-choice{font-size:13px}
+.studio-application-dialog footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.studio-application-dialog pre{white-space:pre-wrap;font:11px/1.5 system-ui;max-height:240px;overflow:auto}
+.studio-custom-format{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.studio-custom-format input[type=number]{width:90px}
+body.studio-layout.multi-development-open .side{display:flex!important;z-index:2800;top:90px;width:340px;background:#fff;color:#242134}
+body.multi-development-open #multiPreviewModal{padding-right:360px}
+#multiPreviewModal .multi-head{flex-wrap:wrap}
+#multiEditScope{padding:6px;border:1px solid #ddd3ed;border-radius:5px;font:inherit}
+@media(max-width:800px){#studioApplicationFormats{grid-template-columns:1fr}body.multi-development-open .side{width:270px}body.multi-development-open #multiPreviewModal{padding-right:285px}}
 .studio-simulation-screen iframe{width:100%;height:100%;border:0;display:block}
 .studio-splitter{width:8px;background:transparent;cursor:col-resize;touch-action:none;position:relative}
 .studio-splitter:after{content:'';position:absolute;top:0;bottom:0;left:3px;width:2px;background:#d0c0e8}

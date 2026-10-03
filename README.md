@@ -1,10 +1,24 @@
-# Interface Studio 6.82.0
+# Interface Studio 6.83.0
+
+## Créer et développer dans plusieurs formats
+
+Cliquer sur **Créer une application**, choisir son nom, les formats et le format à l’ouverture, puis choisir le dossier de destination. Studio crée un nouveau sous-dossier avec une application HTML/CSS/JavaScript fonctionnelle et adaptative. Les fichiers restent modifiables et les formats sont conservés dans `studio-project.json` et la sauvegarde Studio.
+
+**Développer multi-formats** affiche le même projet dans les formats choisis. **Éditer ici** active un écran ; **Base commune** modifie les règles communes et **Adaptation du format actif** cible les règles téléphone, tablette, ordinateur ou TV. Les variantes de téléphone utilisent les règles de largeur communes ; elles ne créent pas des applications séparées. **Choisir les formats** permet d’ajouter des formats personnalisés et de changer le format d’ouverture. Tester ensuite les vrais boutons dans Simulation.
+
+## Applications Android natives dans Simulation
+
+Ouvrir un APK autonome, puis cliquer sur **Lancer sur Android**. Studio installe et lance réellement l’application dans un émulateur local, transmet les clics, gestes et touches, et affiche son écran en direct. **Photos de test** copie des images dans Android : les ouvrir ensuite avec le sélecteur de fichiers de l’application. Les dimensions Android sont réellement modifiées lors d’un changement de format ; le panneau conserve les proportions de cet écran.
+
+Si le moteur manque, **Préparer Android** présente la taille du téléchargement officiel et les licences à accepter, puis récupère les composants Google avec vérification des empreintes. La virtualisation Windows doit être disponible. Le portable comprend les outils APK et Java ; les images système Android, volumineuses, sont téléchargées séparément. La préparation complète depuis un PC sans moteur Android n’a pas été testée par téléchargement intégral ; les catalogues officiels et l’exécution avec les composants installés ont été vérifiés.
+
+Photo TV v0.12 a été exécuté dans Android TV : importation et choix de deux photos, diaporama, pause, reprise et photo suivante vérifiés. Sur Android TV, choisir **Photos de test Studio** dans le sélecteur ; le sélecteur Activity Stub de certaines images Google ne renvoie aucun fichier. Le sélecteur Studio est inclus et installé dans cet émulateur lors de l’importation. Les applications dessinées dans un Canvas peuvent n’exposer qu’une vue complète à la sélection, sans éléments individuels ni styles CSS. L’édition native dépend des ressources disponibles dans l’APK et nécessite une recompilation pour changer le comportement. La création guidée de cette version produit une application web ; elle ne génère pas un projet Kotlin natif. Les APK fractionnés, dépendances matérielles et architectures incompatibles peuvent nécessiter un environnement spécifique.
 
 Éditeur visuel Windows autonome avec Éditeur, Simulation et ChatGPT sur une seule ligne.
 
 ## Télécharger et ouvrir
 
-La [release Windows](https://github.com/Wokgui/Interface-Studio/releases/tag/v6.82.0) contient le portable et les sources modifiables. Lancer `App-Interface-Studio-6.82.0-portable-x64.exe`, puis ouvrir une application HTML, un dossier ou un APK contenant une application web. Aucun téléphone ni Android Studio n’est nécessaire à cette exécution locale. Electron, Java et les outils d’importation APK sont inclus.
+La [release Windows](https://github.com/Wokgui/Interface-Studio/releases/tag/v6.83.0) contient le portable et les sources modifiables. Lancer `App-Interface-Studio-6.83.0-portable-x64.exe`, puis ouvrir ou créer une application. Aucun téléphone physique n’est nécessaire. Electron, Java et les outils d’importation APK sont inclus.
 
 ## Formats téléphone, TV et ordinateur
 
@@ -14,7 +28,7 @@ Automatique utilise les mesures d’un appareil importé ou le profil des ressou
 
 Les formats fixes conservent leur ratio et s’ajustent à la place du panneau sans étirer ni rogner l’écran. Adaptatif change réellement le viewport de chaque panneau : les media queries et la disposition de l’application s’appliquent à sa largeur. Cette option ne réécrit pas une application dont l’interface n’est pas responsive. Les dimensions personnalisées sont logiques (CSS), distinctes de la résolution physique et de la densité de pixels du téléphone.
 
-Les formats et le moteur d’exécution sont indépendants. Photo TV est une application Kotlin/Android native : l’importation reconnaît le paysage, mais son diaporama et ses accès aux photos demandent Android. Un message lisible et un bouton Ouvrir les outils Android remplacent la fausse simulation. Les programmes Windows natifs ne peuvent pas être exécutés ni rendus éditables par le runtime web de Studio.
+Les formats et le moteur d’exécution sont indépendants. Photo TV est une application Kotlin/Android native : l’importation reconnaît le paysage et Simulation utilise Android pour son diaporama et ses accès aux photos. Les programmes Windows natifs ne peuvent pas être exécutés ni rendus éditables par le runtime web de Studio.
 
 Validation ajoutée : 36 combinaisons de neuf profils, deux tailles de fenêtre et deux/trois panneaux ; viewport, proportions, absence de débordement du cadre, vraie interaction web, rotation, dimensions personnalisées, mémorisation et réorganisation responsive. L’APK Photo TV v0.12 est également importé pour vérifier son profil paysage et la distinction entre aperçu et exécution.
 
@@ -49,6 +63,9 @@ npm start
 npm run check
 npm run test:workspace
 npm run test:screens
+npm run test:creation
+# Avec AIS_ANDROID_TEST_SDK et AIS_ANDROID_TEST_APK définis :
+npm run test:native
 npm run smoke
 npm run dist:win
 ```
@@ -71,3 +88,8 @@ Tests dans Electron et dans la version Windows compilée, avec la source web et 
 Le smoke test vérifie aussi les transactions, annulations, captures, exports portables, scénarios et rapports. Son audit ergonomique de l’application Radio signale encore de petites cibles tactiles dans les 12 profils. Ce diagnostic de l’application ouverte est distinct des vérifications de disposition de Studio.
 
 La base locale complète 6.73 a fourni les modules absents du dépôt 6.78. Les captures de la conversation ont été récupérées et examinées. Les archives 6.79/6.80 citées dans la conversation n’étaient pas disponibles comme fichiers ; les corrections sont reconstruites et validées dans ce dépôt autonome.
+## Ouverture simple depuis GitHub
+
+Dans **Ouvrir une application → GitHub**, coller par exemple `https://github.com/Wokgui/L4D2`, puis cliquer **Ouvrir l’application**. Studio télécharge une copie locale, détecte sa page HTML ou son projet Android et l’ouvre. Aucun téléchargement ZIP manuel n’est nécessaire. Les changements effectués dans Studio restent locaux ; ce parcours ne publie rien sur le dépôt d’origine.
+
+Ce parcours prend en charge les dépôts publics GitHub et les liens de branche. Pour un dépôt privé, ouvrir une copie locale avec **Dossier local**. Les applications web qui exigent une compilation ou un serveur doivent encore être préparées avant leur ouverture. Le parcours L4D2 est vérifié par `npm run test:github --prefix app` (récupération réelle, navigation, recherche, tirage et comparaison des formats).

@@ -531,7 +531,7 @@
     const src = value || {};
     const out = Object.assign({ enabled: !!src.enabled }, normalizeResponsiveValues(src), { breakpoints: {} });
     const points = src.breakpoints || {};
-    ['phone','tablet','desktop'].forEach(function (key) {
+    ['phone','tablet','desktop','tv'].forEach(function (key) {
       if (points[key]) out.breakpoints[key] = normalizeResponsiveValues(points[key]);
     });
     return out;
@@ -540,6 +540,7 @@
   function viewportBreakpoint() {
     if (innerWidth < 600) return 'phone';
     if (innerWidth < 1024) return 'tablet';
+    if (innerWidth >= 1600) return 'tv';
     return 'desktop';
   }
 
@@ -547,6 +548,7 @@
     const base = state && state.responsive ? state.responsive : {};
     const out = Object.assign({ enabled: !!base.enabled }, normalizeResponsiveValues(base));
     const bp = viewportBreakpoint();
+    if(bp==='tv' && base.breakpoints?.desktop)Object.assign(out,normalizeResponsiveValues(base.breakpoints.desktop));
     if (base.breakpoints && base.breakpoints[bp]) Object.assign(out, normalizeResponsiveValues(base.breakpoints[bp]));
     out.breakpoint = bp;
     return out;
@@ -688,7 +690,7 @@
     const state = remember(selected);
     if (!state || state.locked) return;
     const bp = String(payload.breakpoint || editingBreakpoint || 'base');
-    if (bp !== 'base' && ['phone','tablet','desktop'].indexOf(bp) < 0) return;
+    if (bp !== 'base' && ['phone','tablet','desktop','tv'].indexOf(bp) < 0) return;
 
     const wasEnabled = !!state.responsive.enabled;
     if (payload.enabled === true && !wasEnabled) {
@@ -731,7 +733,7 @@
 
   function setEditingBreakpoint(value) {
     const bp = String(value || 'base');
-    editingBreakpoint = ['base','phone','tablet','desktop'].indexOf(bp) >= 0 ? bp : 'base';
+    editingBreakpoint = ['base','phone','tablet','desktop','tv'].indexOf(bp) >= 0 ? bp : 'base';
     updateOverlay();
   }
 
@@ -1597,7 +1599,7 @@
       '  --ais-text-title: '+Math.max(8,Number(designTokens.textTitle)||20)+'px;\n'+
       '  --ais-color-primary: '+String(designTokens.colorPrimary||'#6f49f5')+';\n'+
       '  --ais-color-surface: '+String(designTokens.colorSurface||'#ffffff')+';\n}');
-    const mediaRules = { phone:[], tablet:[], desktop:[] };
+    const mediaRules = { phone:[], tablet:[], desktop:[], tv:[] };
     touched.forEach(function (state) {
       const declarations = [];
       if (state.deleted) {
@@ -1607,7 +1609,7 @@
         if (state.responsive && state.responsive.enabled) {
           responsiveCssDeclarations(state.responsive, 'Responsive de base').forEach(function(line){declarations.push(line)});
           const points = state.responsive.breakpoints || {};
-          ['phone','tablet','desktop'].forEach(function(bp){
+          ['phone','tablet','desktop','tv'].forEach(function(bp){
             if (!points[bp]) return;
             const bpDecl = responsiveCssDeclarations(points[bp], 'Breakpoint ' + bp);
             if (bpDecl.length) mediaRules[bp].push(state.selector + ' {\n' + bpDecl.join('\n') + '\n}');
@@ -1694,9 +1696,10 @@
     const mediaMap = {
       phone:'@media (max-width: 599px)',
       tablet:'@media (min-width: 600px) and (max-width: 1023px)',
-      desktop:'@media (min-width: 1024px)'
+      desktop:'@media (min-width: 1024px)',
+      tv:'@media (min-width: 1600px)'
     };
-    ['phone','tablet','desktop'].forEach(function(bp){
+    ['phone','tablet','desktop','tv'].forEach(function(bp){
       if(mediaRules[bp].length)rules.push(mediaMap[bp] + ' {\n' + mediaRules[bp].join('\n\n').replace(/^/gm,'  ') + '\n}');
     });
     return rules.join('\n\n') || '/* Aucun ajustement. */';

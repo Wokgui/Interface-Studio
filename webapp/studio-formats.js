@@ -1,0 +1,5 @@
+(function(root){
+ const formats=[{id:'compact',name:'Téléphone compact',width:360,height:640,kind:'smartphone'},{id:'phone390',name:'Téléphone 390',width:390,height:844,kind:'smartphone'},{id:'phone',name:'Téléphone 412',width:412,height:915,kind:'smartphone'},{id:'phone430',name:'Téléphone large',width:430,height:932,kind:'smartphone'},{id:'fold',name:'Pliable ouvert',width:768,height:1024,kind:'smartphone'},{id:'tablet',name:'Tablette',width:768,height:1024,kind:'tablet'},{id:'desktop',name:'Ordinateur',width:1366,height:768,kind:'desktop'},{id:'tv',name:'TV · 16:9',width:1920,height:1080,kind:'tv'}];
+ const validate=p=>p&&typeof p.id==='string'&&/^[a-zA-Z0-9_-]{1,40}$/.test(p.id)&&typeof p.name==='string'&&Number.isInteger(p.width)&&Number.isInteger(p.height)&&p.width>=240&&p.width<=8192&&p.height>=240&&p.height<=8192&&['smartphone','tablet','desktop','tv','custom'].includes(p.kind);
+ const api={formats,validate};if(typeof module==='object'&&module.exports)module.exports=api;else root.StudioFormats=api;
+})(typeof window!=='undefined'?window:globalThis);

@@ -1,6 +1,6 @@
 {
   "name": "app-interface-studio",
-  "version": "6.82.0",
+  "version": "6.83.0",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
@@ -15,7 +15,10 @@
     "setup:runtime": "node scripts/ensure-runtime.cjs",
     "prestart": "npm run setup:runtime",
     "predist:win": "npm run setup:runtime",
-    "test:screens": "node scripts/test-screen-profiles.cjs"
+    "test:screens": "node scripts/test-screen-profiles.cjs",
+    "test:creation": "node scripts/test-create-project.cjs",
+    "test:native": "node scripts/test-native-simulation.cjs",
+    "test:github": "node scripts/test-github-project.cjs"
   },
   "devDependencies": {
     "agent-browser": "^0.38.2",
@@ -45,7 +48,11 @@
       "chatgpt-project.cjs",
       "chatgpt-window.cjs",
       "chatgpt-direct.cjs",
-      "local-services.cjs"
+      "local-services.cjs",
+      "android-runtime.cjs",
+      "android-ui.cjs",
+      "studio-project.cjs",
+      "studio-github.cjs"
     ],
     "extraResources": [
       {
@@ -62,6 +69,10 @@
       {
         "from": "runtime",
         "to": "apk-runtime"
+      },
+      {
+        "to": "studio-photo-picker.apk",
+        "from": "android-picker/studio-photo-picker.apk"
       }
     ],
     "win": {

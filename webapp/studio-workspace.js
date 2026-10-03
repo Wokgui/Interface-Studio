@@ -116,16 +116,18 @@
   toolbar.querySelectorAll('[data-pane]').forEach(x=>x.onchange=()=>{chosen=[...toolbar.querySelectorAll('[data-pane]:checked')].map(x=>x.dataset.pane);if(!chosen.length)chosen=[x.dataset.pane];mode='split';persist();render();});
   document.getElementById('studioEqualWidths').onclick=()=>{ratios[visible.join(',')]=visible.map(()=>1);persist();render();};
   document.getElementById('studioEditorTools').onclick=()=>{document.body.classList.toggle('editor-tools-open');window.StudioChatGpt?.hideView?.(document.body.classList.contains('editor-tools-open'));};
-  document.getElementById('studioSelectElement').onclick=e=>{selecting=!selecting;e.target.classList.toggle('active',selecting);e.target.textContent=selecting?'Interagir':'Sélectionner';send('inspect',{active:selecting});};
+  document.getElementById('studioSelectElement').onclick=e=>{selecting=!selecting;e.target.classList.toggle('active',selecting);e.target.textContent=selecting?'Interagir':'Sélectionner';send('inspect',{active:selecting});window.StudioNativeSimulation?.setInspect(selecting);};
   document.getElementById('studioReloadSimulation').onclick=()=>{iframe.contentWindow?.location.reload();};
   function setSource(next) {
     source=next;
-    const native=next?.type==='apk-runtime-only'||next?.type==='android-project';nativeNotice.hidden=!native;holder.hidden=native;document.getElementById('studioSelectElement').disabled=native;document.getElementById('studioReloadSimulation').disabled=native;
+    const native=next?.type==='apk-runtime-only'||next?.type==='android-project';nativeNotice.hidden=true;holder.hidden=native;document.getElementById('studioSelectElement').disabled=false;document.getElementById('studioReloadSimulation').disabled=native;
+    window.StudioNativeSimulation?.setSource(next,area);
     sourceKey=next?.path?(next.path+'|'+(next.entry||'')):next?.url||'';
     const saved=projectProfiles[sourceKey];screenSelect.value=typeof saved==='string'?saved:saved?.mode||'auto';if(!screenSelect.value)screenSelect.value='auto';
+    screenSelect.querySelector('option[value="responsive"]').disabled=native;if(native&&screenSelect.value==='responsive')screenSelect.value='auto';
     customProfile=validProfile(saved?.custom)?saved.custom:{width:1280,height:720,kind:'custom'};rotated=!!saved?.rotated;
     document.getElementById('studioScreenW').value=customProfile.width;document.getElementById('studioScreenH').value=customProfile.height;document.getElementById('studioCustomScreen').hidden=screenSelect.value!=='custom';
-    const supplied=next?.phone?.profile||next?.nativePreviewProfile||next?.screenProfile;
+    const supplied=next?.phone?.profile||next?.nativePreviewProfile||next?.screenProfile||next?.studioProject?.formats?.find(p=>p.id===next.studioProject.defaultFormat);
     detectedProfile=validProfile(supplied)?{width:Number(supplied.width),height:Number(supplied.height),kind:supplied.deviceKind||supplied.kind||(next?.phone?.profile?'smartphone':'custom')}:((next?.type==='bundled-demo'||/radio intelligente|radio-intelligente/i.test(next?.label||''))?profiles.phone:profiles.desktop);
     fit();
     if(next?.type==='apk-runtime-only'||next?.type==='android-project'){
@@ -136,14 +138,17 @@
   window.addEventListener('message',e=>{
     const d=e.data;
     if(e.source===iframe.contentWindow && d?.source==='ais-simulation'){
-      if(d.type==='screen-profile'&&validProfile(d.payload)&&!source?.nativePreviewProfile&&!source?.phone?.profile){detectedProfile=d.payload;fit();}
+      if(d.type==='screen-profile'&&validProfile(d.payload)&&!source?.nativePreviewProfile&&!source?.phone?.profile&&!source?.studioProject){detectedProfile=d.payload;fit();}
       if(d.type==='selection'){lastSelection=d.payload;window.StudioHost?.select(d.payload.selector);window.StudioChatGpt?.setSelection?.(d.payload);}
     } else if(e.source===document.getElementById('appFrame')?.contentWindow && d?.source==='app-visual-editor') {
       if(d.type==='state' && d.payload?.selector){lastSelection=d.payload;send('selection',d.payload);send('css',{css:d.payload.css||''});window.StudioChatGpt?.setSelection?.(d.payload);}
       if(d.type==='css'){send('css',{css:d.payload?.css||''});}
     }
   });
-  window.StudioWorkspace={setSource,fit,useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();},setMode(next){mode=next;render();},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
+  window.StudioWorkspace={setSource,fit,setNativeSelection:p=>{lastSelection=p;},useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();window.StudioNativeSimulation?.resize(currentProfile());},setMode(next){mode=next;render();},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
+  screenSelect.addEventListener('change',()=>window.StudioNativeSimulation?.resize(currentProfile()));
+  document.getElementById('studioRotateScreen').addEventListener('click',()=>window.StudioNativeSimulation?.resize(currentProfile()));
+  document.getElementById('studioApplyScreen').addEventListener('click',()=>window.StudioNativeSimulation?.resize(currentProfile()));
   new ResizeObserver(fit).observe(main);
   new ResizeObserver(fit).observe(workspace);
   new ResizeObserver(fit).observe(area);

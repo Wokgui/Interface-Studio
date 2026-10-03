@@ -5,6 +5,7 @@ const path = require('path');
 const os = require('os');
 const { execFileSync } = require('child_process');
 const crypto = require('crypto');
+if(process.env.AIS_WORKSPACE_TEST==='1'&&process.env.AIS_TEST_USER_DATA){const folder=path.resolve(process.env.AIS_TEST_USER_DATA);fs.mkdirSync(folder,{recursive:true});app.setPath('userData',folder);}
 
 const smokeMode=process.env.AIS_SMOKE_TEST==='1';
 if(smokeMode)app.disableHardwareAcceleration();
@@ -70,9 +71,10 @@ function serveStatic(root){
       res.statusCode=200;
       res.setHeader('content-type',MIME[ext]||'application/octet-stream');
       res.setHeader('cache-control','no-store');
-      if((ext==='.html'||ext==='.htm')&&url.searchParams.get('__ais_simulation')==='1'){
+      if((ext==='.html'||ext==='.htm')&&(url.searchParams.get('__ais_simulation')==='1'||url.searchParams.get('__ais_device')==='1')){
         // A saved APK may include the old visual editor. Keep application scripts intact.
-        const html=fs.readFileSync(file,'utf8').replace(/<script\b[^>]*\bsrc=["'][^"']*visual-editor\.js[^"']*["'][^>]*>\s*<\/script>/gi,'');
+        let html=fs.readFileSync(file,'utf8');if(url.searchParams.get('__ais_simulation')==='1')html=html.replace(/<script\b[^>]*\bsrc=["'][^"']*visual-editor\.js[^"']*["'][^>]*>\s*<\/script>/gi,'');
+        const deviceScript='<script>'+fs.readFileSync(path.join(webRoot(),'studio-device.js'),'utf8')+'</script>';html=/<head\b[^>]*>/i.test(html)?html.replace(/<head\b[^>]*>/i,tag=>tag+deviceScript):deviceScript+html;
         res.end(html);return;
       }
       fs.createReadStream(file).pipe(res);
@@ -338,7 +340,8 @@ function createWindow(){
       sandbox:true,
       webSecurity:false,
       allowRunningInsecureContent:true,
-      autoplayPolicy:'no-user-gesture-required'
+      autoplayPolicy:'no-user-gesture-required',
+      backgroundThrottling:false
     }
   });
 
@@ -3700,6 +3703,8 @@ ipcMain.handle('source:apply-direct-edit',async (_event,payload)=>{
   }
 });
 
+function withStudioProject(source){const root=source.root||(source.type==='html'?path.dirname(source.path):source.path);const project=root?require('./studio-project.cjs').read(root):null;return project?{...source,studioProject:project}:source;}
+require('./studio-project.cjs').register({ipcMain,dialog,getWindow:()=>mainWindow,startLocalTarget});
 ipcMain.handle('source:open-url',async (_event,value)=>{
   const url=normalizeUrl(value);
   if(!url)return {ok:false,error:'Adresse invalide. Utilise une URL http:// ou https://.'};
@@ -3707,25 +3712,27 @@ ipcMain.handle('source:open-url',async (_event,value)=>{
   return {ok:true,source:{type:'url',url,label:new URL(url).hostname}};
 });
 
+async function openSourceDirectory(root){
+  const candidates=['index.html','index.htm','dist/index.html','build/index.html','www/index.html','public/index.html'];
+  const entry=candidates.find(name=>fs.existsSync(path.join(root,name)));
+  if(entry){const url=await startLocalTarget(root,entry);return {ok:true,source:withStudioProject({type:'folder',path:root,entry,url,label:path.basename(root)})};}
+  const android=detectAndroidProject(root);
+  if(android){const preview=await buildAndroidPreview(android);return {ok:true,source:{type:'android-project',path:root,url:preview.url,label:path.basename(root)+' · Android natif',nativeKind:preview.nativeKind,nativeFile:preview.nativeFile,nativePreviewProfile:preview.nativePreviewProfile,nativeScreens:preview.nativeScreens}};}
+  return {ok:false,error:'Projet récupéré, mais aucun index.html ni projet Android détecté. Les projets qui nécessitent une compilation doivent être préparés avant leur ouverture.'};
+}
+let githubImportBusy=false;
+ipcMain.handle('source:github',async(event,value)=>{
+  if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine refusée.'};
+  if(githubImportBusy)return {ok:false,error:'Une ouverture GitHub est déjà en cours.'};githubImportBusy=true;
+  try{const imported=await require('./studio-github.cjs').download(String(value||''),path.join(app.getPath('userData'),'github-projects'),progress=>event.sender.send('source:github-progress',progress));const result=await openSourceDirectory(imported.root);if(result.ok){result.source.github=imported.github;result.source.label=imported.github.repository;}return result;}catch(e){return {ok:false,error:e.message};}finally{githubImportBusy=false;}
+});
 ipcMain.handle('source:pick-folder',async ()=>{
   const result=await dialog.showOpenDialog({
     title:'Choisir le dossier de l’application',
     properties:['openDirectory']
   });
   if(result.canceled||!result.filePaths[0])return {ok:false,canceled:true};
-  const root=result.filePaths[0];
-  const candidates=['index.html','index.htm','dist/index.html','build/index.html','www/index.html','public/index.html'];
-  const entry=candidates.find(name=>fs.existsSync(path.join(root,name)));
-  if(entry){
-    const url=await startLocalTarget(root,entry);
-    return {ok:true,source:{type:'folder',path:root,entry,url,label:path.basename(root)}};
-  }
-  const android=detectAndroidProject(root);
-  if(android){
-    const preview=await buildAndroidPreview(android);
-    return {ok:true,source:{type:'android-project',path:root,url:preview.url,label:path.basename(root)+' · Android natif',nativeKind:preview.nativeKind,nativeFile:preview.nativeFile,nativePreviewProfile:preview.nativePreviewProfile,nativeScreens:preview.nativeScreens}};
-  }
-  return {ok:false,error:'Aucun index.html ni projet Android détecté dans ce dossier.'};
+  return openSourceDirectory(result.filePaths[0]);
 });
 
 ipcMain.handle('source:pick-html',async ()=>{
@@ -3740,7 +3747,7 @@ ipcMain.handle('source:pick-html',async ()=>{
   const root=path.dirname(file);
   const entry=path.basename(file);
   const url=await startLocalTarget(root,entry);
-  return {ok:true,source:{type:'html',path:file,root,entry,url,label:path.basename(file)}};
+  return {ok:true,source:withStudioProject({type:'html',path:file,root,entry,url,label:path.basename(file)})};
 });
 
 ipcMain.handle('source:open-demo',async ()=>{
@@ -3761,7 +3768,7 @@ ipcMain.handle('source:restore',async (_event,source)=>{
     if(source.type==='folder'){
       if(!source.path||!fs.existsSync(source.path))return {ok:false,error:'Le dossier source du projet est introuvable.'};
       const url=await startLocalTarget(source.path,source.entry||'index.html');
-      return {ok:true,source:{...source,url}};
+      return {ok:true,source:withStudioProject({...source,url})};
     }
     if(source.type==='android-project'){
       if(!source.path||!fs.existsSync(source.path))return {ok:false,error:'Le projet Android est introuvable.'};
@@ -3774,7 +3781,7 @@ ipcMain.handle('source:restore',async (_event,source)=>{
       if(!file||!fs.existsSync(file))return {ok:false,error:'Le fichier HTML source du projet est introuvable.'};
       const root=source.root||path.dirname(file);
       const url=await startLocalTarget(root,source.entry||path.basename(file));
-      return {ok:true,source:{...source,root,url}};
+      return {ok:true,source:withStudioProject({...source,root,url})};
     }
     if(source.type==='bundled-demo'){
       const url=await startLocalTarget(webRoot(),'index.html');
@@ -4161,14 +4168,15 @@ app.on('window-all-closed',async ()=>{
 
 let androidWindow;
 const apkEditor=require('./apk-editor.cjs').create({app,dialog});
-const androidLabBackend=require('./android-lab.cjs').register({app,ipcMain,dialog,mainWindow:()=>androidWindow});
+function sourceApkFile(src,useExport=true){if(src?.apkProject){const p=apkEditor.project(src.apkProject.id);return useExport&&p.lastExport&&fs.existsSync(p.lastExport)?p.lastExport:path.join(p.dir,'original.apk');}const file=runtimeApks.get(src?.runtimeApkId);if(!file)throw Error('Ouvrir un APK dans Studio avant de lancer Android.');return file;}
+const androidLabBackend=require('./android-lab.cjs').register({app,ipcMain,dialog,mainWindow:()=>androidWindow,studioWindow:()=>mainWindow,resolveApk:sourceApkFile});
 async function openAndroidWindow(){
  if(androidWindow&&!androidWindow.isDestroyed()){androidWindow.focus();return {ok:true}}
  androidWindow=new BrowserWindow({width:1400,height:950,webPreferences:{partition:'persist:ais-android-lab',preload:path.join(__dirname,'android-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
  androidWindow.webContents.session.setPermissionRequestHandler((_contents,permission,callback)=>callback(permission==='fullscreen'));
  androidWindow.webContents.setWindowOpenHandler(({url})=>{if(['https://developer.android.com/studio','https://developer.android.com/studio/run/emulator-acceleration'].includes(url))shell.openExternal(url);return {action:'deny'}});
  androidWindow.webContents.on('will-navigate',(e,url)=>{if(url!==studioBaseUrl+'/android-lab.html')e.preventDefault()});
- androidWindow.on('closed',()=>{androidLabBackend.stopVideo();androidWindow=null});
+ androidWindow.on('closed',()=>{androidLabBackend.stopVideo(androidWindow);androidWindow=null});
  await androidWindow.loadURL(studioBaseUrl+'/android-lab.html');return {ok:true};
 }
 const runtimeApks=new Map();
