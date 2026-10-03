@@ -1,8 +1,8 @@
 {
   "name": "app-interface-studio",
-  "version": "6.63.0",
+  "version": "6.78.0",
   "private": true,
-  "description": "Éditeur visuel universel Windows avec rapport final HTML/JSON autonome, analyse multi-routes, Container Queries complexes, diagnostics i18n/polices/animations, nettoyage CSS sûr, scénarios persistants et tests de performance/réseau",
+  "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
