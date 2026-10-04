@@ -135,7 +135,7 @@
   document.getElementById('studioReloadSimulation').onclick=()=>{iframe.contentWindow?.location.reload();};
   function setSource(next) {
     source=next;
-    const native=next?.type==='apk-runtime-only'||next?.type==='android-project';nativeNotice.hidden=true;holder.hidden=native;document.getElementById('studioSelectElement').disabled=false;document.getElementById('studioReloadSimulation').disabled=native;
+    const native=!!next?.apkProject||next?.type==='apk-runtime-only'||next?.type==='android-project';nativeNotice.hidden=true;holder.hidden=native;document.getElementById('studioSelectElement').disabled=false;document.getElementById('studioReloadSimulation').disabled=native;
     window.StudioNativeSimulation?.setSource(next,area);
     sourceKey=next?.path?(next.path+'|'+(next.entry||'')):next?.url||'';
     const saved=projectProfiles[sourceKey];screenSelect.value=typeof saved==='string'?saved:saved?.mode||'auto';if(!screenSelect.value)screenSelect.value='auto';
@@ -145,7 +145,7 @@
     const supplied=next?.phone?.profile||next?.nativePreviewProfile||next?.screenProfile||next?.studioProject?.formats?.find(p=>p.id===next.studioProject.defaultFormat);
     detectedProfile=validProfile(supplied)?{width:Number(supplied.width),height:Number(supplied.height),kind:supplied.deviceKind||supplied.kind||(next?.phone?.profile?'smartphone':'custom')}:((next?.type==='bundled-demo'||/radio intelligente|radio-intelligente/i.test(next?.label||''))?profiles.phone:profiles.desktop);
     fit();
-    if(next?.type==='apk-runtime-only'||next?.type==='android-project'){
+    if(native){
       iframe.srcdoc='<body style="font:16px system-ui;padding:24px">Cette application contient du code Android natif. Son exécution nécessite le moteur Android facultatif. L’aperçu des ressources reste disponible dans l’Éditeur.</body>';
     } else if(next?.url) {iframe.removeAttribute('srcdoc');const u=new URL(next.url,location.href);u.searchParams.delete('visual-editor');u.searchParams.set('__ais_simulation','1');iframe.src=u.href;}
   }
@@ -156,6 +156,7 @@
       if(d.type==='screen-profile'&&validProfile(d.payload)&&!source?.nativePreviewProfile&&!source?.phone?.profile&&!source?.studioProject){detectedProfile=d.payload;fit();}
       if(d.type==='selection'){lastSelection=d.payload;window.StudioHost?.select(d.payload.selector);window.StudioChatGpt?.setSelection?.(d.payload);}
     } else if(e.source===document.getElementById('appFrame')?.contentWindow && d?.source==='app-visual-editor') {
+      if(d.type==='selection-cleared'){lastSelection=null;send('selection',{selector:null});window.StudioChatGpt?.setSelection?.(null);}
       if(d.type==='state' && d.payload?.selector){lastSelection=d.payload;send('selection',d.payload);send('css',{css:d.payload.css||''});window.StudioChatGpt?.setSelection?.(d.payload);}
       if(d.type==='css'){send('css',{css:d.payload?.css||''});}
     }

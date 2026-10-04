@@ -20,6 +20,7 @@ const out=path.resolve(__dirname,'../../test-results/creation');fs.mkdirSync(out
   let tv;for(const f of page.frames()){if(f===page.mainFrame()||f===sim)continue;try{if(await f.evaluate(()=>innerWidth===1920&&!!window.RadioVisualEditor))tv=f;}catch{}}
   assert(tv);await tv.locator('#primary-action').click();await tv.waitForFunction(()=>window.RadioVisualEditor.state().selector==='#primary-action');
   await page.selectOption('#multiEditScope','format');await page.waitForFunction(()=>document.getElementById('breakpointEdit').value==='tv');
+  await page.locator('.studio-tool-category').filter({has:page.locator('#responsiveCard')}).locator('summary').click();
   await page.locator('#responsiveCard h2').click();await page.locator('#responsiveEnabled').check();await page.selectOption('#hAnchor','left');await page.selectOption('#widthMode','percent');await page.fill('#widthPercent','70');await page.locator('#widthPercent').dispatchEvent('change');
   await page.waitForFunction(()=>document.getElementById('cssOut').value.includes('@media (min-width: 1600px)'));await page.waitForTimeout(700);
   const project=await page.evaluate(()=>window.StudioHost.requestProject());assert(project.css.includes('@media (min-width: 1600px)'));report.tvSpecificRule=true;

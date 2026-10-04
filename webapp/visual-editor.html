@@ -783,7 +783,7 @@ body.desktop .desktop-badge{display:inline-flex}
         <button class="btn wide" id="multiPreviewBtn">▦ Comparer plusieurs écrans</button>
         <button class="btn wide" id="resetCanvasBtn">◎ Recentrer le canevas</button>
       </div>
-      <p>Glisse les objets. Les guides roses s’accrochent au centre, au parent, à la zone sûre, aux objets proches et aux espacements égaux. Clique directement sur la règle du haut ou de gauche pour ajouter un repère permanent. <kbd>Espace</kbd> + glisser déplace le canevas ; <kbd>Ctrl</kbd> + molette zoome.</p>
+      <p>Glisse les objets. Les guides roses s’accrochent au centre, au parent, à la zone sûre, aux objets proches et aux espacements égaux. Clique directement sur la règle du haut ou de gauche pour ajouter un repère permanent. <kbd>Clic droit maintenu</kbd> + glisser déplace la vue ; la <kbd>molette</kbd> zoome. <kbd>Ctrl+Z</kbd> annule ; <kbd>Ctrl+Y</kbd> rétablit. Ces gestes de vue ne modifient pas l’application.</p>
     </section>
 
     <section class="card">
@@ -5688,11 +5688,17 @@ body.desktop .desktop-badge{display:inline-flex}
 
   document.getElementById('resetCanvasBtn').addEventListener('click',resetCanvasPosition);
   workspace.addEventListener('wheel',function(event){
-    if(!(event.ctrlKey||event.metaKey))return;
+    if(currentPreviewMode!=='edit')return;
     event.preventDefault();
     setRuntimeZoom(currentZoomScale()+(event.deltaY<0?.1:-.1));
   },{passive:false});
 
+  var rightCanvasPan=null;
+  workspace.addEventListener('contextmenu',function(e){if(currentPreviewMode==='edit')e.preventDefault()});
+  workspace.addEventListener('pointerdown',function(e){if(currentPreviewMode!=='edit'||e.button!==2)return;e.preventDefault();rightCanvasPan={id:e.pointerId,x:e.clientX,y:e.clientY};workspace.setPointerCapture(e.pointerId);workspace.classList.add('canvas-panning')});
+  workspace.addEventListener('pointermove',function(e){if(!rightCanvasPan||e.pointerId!==rightCanvasPan.id)return;e.preventDefault();canvasPanX+=e.clientX-rightCanvasPan.x;canvasPanY+=e.clientY-rightCanvasPan.y;rightCanvasPan.x=e.clientX;rightCanvasPan.y=e.clientY;applyCanvasPan()});
+  function endRightCanvasPan(){rightCanvasPan=null;workspace.classList.remove('canvas-panning')}
+  workspace.addEventListener('pointerup',endRightCanvasPan);workspace.addEventListener('pointercancel',endRightCanvasPan);workspace.addEventListener('lostpointercapture',endRightCanvasPan);window.addEventListener('blur',endRightCanvasPan);
   document.getElementById('addGuideXBtn').addEventListener('click',function(){addCustomGuide('x',customGuideX.value)});
   document.getElementById('addGuideYBtn').addEventListener('click',function(){addCustomGuide('y',customGuideY.value)});
   document.getElementById('clearGuidesBtn').addEventListener('click',function(){prefs.customGuidesX=[];prefs.customGuidesY=[];syncCustomGuides();setStatus('Repères personnalisés effacés.')});
@@ -6001,9 +6007,9 @@ body.desktop .desktop-badge{display:inline-flex}
     await closeMultiPreview();
     document.getElementById('nativeScreenField').hidden=!(source.nativeScreens?.length);var ns=document.getElementById('nativeScreenSelect');ns.replaceChildren();(source.nativeScreens||[]).forEach(function(s){var o=document.createElement('option');o.value=s.id;o.textContent=s.label||s.id;o.selected=!s.hidden;ns.append(o)});if(source.nativeScreens?.length)ns.value=(source.nativeScreens.find(s=>!s.hidden)||source.nativeScreens[0]).id;
     currentSource=source;window.StudioApplication?.setSource(source);window.StudioWorkspace?.setSource(source);window.StudioChatGpt?.setSource(source);document.getElementById('realApkBtn').hidden=!(source.apkProject||source.runtimeApkId);var gate=document.getElementById('nativeRenderGate');gate.hidden=!(source.runtimeApkId||source.type==='android-project');gate.style.display=gate.hidden?'none':'flex';document.getElementById('nativeResourcesBtn').hidden=!!source.runtimeApkId;document.getElementById('nativeRenderStatus').textContent=source.editError?'Ressources non éditables : '+source.editError:'Les ressources XML restent accessibles, mais cet aperçu ne constitue pas le rendu Android.';window.ApkEditorUi?.setProject(source.apkProject);
-    if(source.androidWindowProfile)document.getElementById('androidBarsLayout').value=source.androidWindowProfile.systemBarsLayout;
+    if(source.androidWindowProfile)document.getElementById('androidBarsLayout').value=source.androidWindowProfile.systemBarsLayout;else if(source.apkProject&&source.androidTargetSdk>=35)document.getElementById('androidBarsLayout').value='overlay';
     document.getElementById('openAsAppBtn').textContent='Ouvrir comme appli';
-    document.getElementById('sourceFidelity').textContent=source.type==='bundled-demo'?'Démo locale : version et données différentes du téléphone':'Source locale ouverte. Calibrer les dimensions pour correspondre à votre appareil.';
+    document.getElementById('sourceFidelity').textContent=source.apkProject?'Éditeur : ressources web, sans la fenêtre Android. Simulation : APK exécuté sur Android avec ses barres système.':source.type==='bundled-demo'?'Démo locale : version et données différentes du téléphone':'Source locale ouverte. Calibrer les dimensions pour correspondre à votre appareil.';
     if(source.nativePreviewProfile){var np=source.nativePreviewProfile;preset.value='custom';screenCustomW.value=np.width;screenCustomH.value=np.height;zoom.value='fit';selectedDeviceKind=np.deviceKind||'custom';document.getElementById('androidTopInset').value=np.topInset;document.getElementById('androidBottomInset').value=np.bottomInset;document.getElementById('androidLeftInset').value=np.leftInset||0;document.getElementById('androidRightInset').value=np.rightInset||0;document.getElementById('androidBarsLayout').value='inset';setDevice();document.getElementById('sourceFidelity').textContent='Aperçu des ressources XML : orientation et style importés. Les photos personnelles et les changements calculés par le code nécessitent Android réel.';}
     if(source.phone?.profile)applyAndroidGeometry(source.phone.profile,'Mesures du téléphone');
     pendingDirectDiff=null;pendingNativeDiff=null;pendingDiffKind=null;

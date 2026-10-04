@@ -8,7 +8,7 @@ const out=path.resolve(__dirname,'../../test-results');fs.mkdirSync(out,{recursi
  const report={cases:[],errors:[],checks:{}};
  try{
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].showInactive());
-  const page=await app.firstWindow();page.on('pageerror',e=>report.errors.push(e.message));await page.waitForFunction(()=>window.StudioHost&&window.StudioWorkspace);
+  const page=await app.firstWindow();page.on('pageerror',e=>{report.errors.push(e.message);console.error(e.stack)});await page.waitForFunction(()=>window.StudioHost&&window.StudioWorkspace);
   const source={type:'url',url:'http://127.0.0.1:'+server.address().port+'/',label:'Screen runtime fixture'};
   await page.evaluate(s=>window.StudioHost.loadSource(s),source);await page.waitForFunction(()=>window.StudioWorkspace.getScreenProfile().width===1920);
   report.checks.explicitMetadata=true;

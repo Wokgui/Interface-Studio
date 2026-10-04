@@ -1,4 +1,20 @@
-# Interface Studio 6.85.0
+# Interface Studio 6.86.0
+
+## Nouveautés 6.86
+
+Version construite sur la 6.85. Elle conserve la présentation harmonisée, les sections d'édition repliées, les formats multiples et la sélection synchronisée.
+
+- Clic droit maintenu : déplacement de la vue ; molette : zoom autour du pointeur.
+- Ctrl+Z et Ctrl+Y : historique d'édition corrigé, y compris après déplacement au clavier.
+- Échap : désélection et annulation du geste en cours.
+- ChatGPT : poignée pour déplacer verticalement la saisie, réglage de position et conservation locale du brouillon.
+- APK avec interface web : lancement automatique dans le vrai moteur Android, avec ses barres système et sa densité. L'éditeur des ressources est distingué de la simulation native.
+- Importation APK : inspection possible avec les Build Tools fournis si le SDK choisi est incomplet.
+- Correction de l'injection de l'éditeur pendant le chargement d'une page.
+
+Vérification dans l'exécutable Windows : gestes, historique, Échap, deux/trois panneaux, séparateurs, lecture audio et sélection synchronisée ; ouverture de Radio 1.13 dans Android réel. Comparaison multi-formats et création d'un projet avec variantes téléphone/tablette/ordinateur/TV. La saisie ChatGPT a été vérifiée sur une page représentative, sans envoi de message dans une conversation authentifiée.
+
+Le portable comprend les outils APK et Java. Le moteur et les images Android nécessitent une préparation initiale. Les ancrages d'aperçu restent des paramètres du projet ; la conversion de tous les ancrages en contraintes du code source n'est pas automatique. Consulter le guide joint avant de publier une application adaptée à plusieurs écrans.
 
 ## Présentation 6.85, basée sur la 6.84
 
@@ -28,7 +44,7 @@ Cliquer sur **Créer une application**, choisir son nom, les formats et le forma
 
 ## Applications Android natives dans Simulation
 
-Ouvrir un APK autonome, puis cliquer sur **Lancer sur Android**. Studio installe et lance réellement l’application dans un émulateur local, transmet les clics, gestes et touches, et affiche son écran en direct. **Photos de test** copie des images dans Android : les ouvrir ensuite avec le sélecteur de fichiers de l’application. Les dimensions Android sont réellement modifiées lors d’un changement de format ; le panneau conserve les proportions de cet écran.
+Ouvrir un APK autonome : Studio prépare puis lance automatiquement le moteur Android. **Lancer sur Android** reste disponible pour une relance. Studio installe et lance réellement l’application dans un émulateur local, transmet les clics, gestes et touches, et affiche son écran en direct. **Photos de test** copie des images dans Android : les ouvrir ensuite avec le sélecteur de fichiers de l’application. Les dimensions Android sont réellement modifiées lors d’un changement de format ; le panneau conserve les proportions de cet écran.
 
 Si le moteur manque, **Préparer Android** présente la taille du téléchargement officiel et les licences à accepter, puis récupère les composants Google avec vérification des empreintes. La virtualisation Windows doit être disponible. Le portable comprend les outils APK et Java ; les images système Android, volumineuses, sont téléchargées séparément. La préparation complète depuis un PC sans moteur Android n’a pas été testée par téléchargement intégral ; les catalogues officiels et l’exécution avec les composants installés ont été vérifiés.
 

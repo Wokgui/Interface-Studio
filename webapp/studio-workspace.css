@@ -68,6 +68,7 @@ body.studio-layout :is(.hint,.settings-note,.field label,.source-dialog-head spa
 .studio-pane-bar button{font-size:1rem;min-height:32px}
 .studio-editor-body{display:flex;flex:1;min-height:0;overflow:hidden}
 body.studio-layout .studio-editor-body .side{position:relative;inset:auto;width:clamp(270px,38%,440px);flex:none;height:100%;min-height:0;overflow:auto;box-shadow:none;border-left:1px solid var(--line);z-index:auto}
+body.studio-layout.multi-development-open .studio-editor-body .side{position:fixed;inset:90px 12px 12px auto;width:340px;height:auto;max-height:none;z-index:2800}
 body.studio-layout.editor-tools-open .studio-editor-body .side{display:flex;flex-direction:column}
 .studio-tools-head{display:flex;justify-content:center;align-items:center;gap:8px;position:sticky;top:0;background:white;z-index:5;padding:8px;flex:none}
 .studio-pane-order{display:flex;gap:4px}
