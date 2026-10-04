@@ -1,4 +1,12 @@
-# Interface Studio 6.84.0
+# Interface Studio 6.85.0
+
+## Présentation 6.85, basée sur la 6.84
+
+La fenêtre d’ouverture utilise des cartes régulières avec un titre et une description sur des lignes distinctes. Sa hauteur s’adapte à la fenêtre et son contenu reste accessible par défilement. La barre de travail rassemble les contrôles des panneaux et leur ordre dans le menu **Panneaux** ; les flèches de chaque panneau et le déplacement par glissement sont conservés.
+
+Les outils d’édition sont regroupés en **Écran et repères**, **Éléments et calques**, **Mise en page**, **Apparence et contenu**, **Tests et diagnostics**, **Projet et fichiers**. À chaque ouverture du menu d’édition, les catégories, sections et sous-sections sont repliées, y compris si des sections étaient ouvertes précédemment. La conservation des panneaux et du ChatGPT de la 6.84 est maintenue.
+
+Validation visuelle Windows : `node app/scripts/test-polish.cjs` vérifie quatre tailles de fenêtre, la séparation des titres/descriptions, la réouverture repliée et les trois modes d’affichage. Les tests d’interface 6.84 et de disposition/interactions complètent ces vérifications.
 
 ## Interface personnalisable
 

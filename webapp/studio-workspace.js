@@ -120,7 +120,7 @@
   const side=document.querySelector('.side');
   const editorBody=document.createElement('div');editorBody.className='studio-editor-body';editor.append(editorBody);editorBody.append(workspace,side);
   const toolsHead=document.createElement('div');toolsHead.className='studio-tools-head';toolsHead.innerHTML='<b>Outils d’édition</b><button class="btn" aria-label="Fermer les outils d’édition">Fermer ×</button>';side.prepend(toolsHead);
-  function toggleTools(value){document.body.classList.toggle('editor-tools-open',value);document.getElementById('studioEditorTools').setAttribute('aria-expanded',String(value));requestAnimationFrame(fit);}
+  function toggleTools(value){if(value)window.StudioInterface?.collapseEditing();document.body.classList.toggle('editor-tools-open',value);document.getElementById('studioEditorTools').setAttribute('aria-expanded',String(value));requestAnimationFrame(fit);}
   toolsHead.querySelector('button').onclick=()=>toggleTools(false);
   document.getElementById('studioEditorTools').onclick=()=>toggleTools(!document.body.classList.contains('editor-tools-open'));
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('editor-tools-open')){toggleTools(false);}});

@@ -455,6 +455,7 @@ body.desktop .desktop-badge{display:inline-flex}
 }
 </style>
 <link rel="stylesheet" href="studio-workspace.css">
+<link rel="stylesheet" href="studio-polish.css">
 </head>
 <body>
 <header>
@@ -521,8 +522,8 @@ body.desktop .desktop-badge{display:inline-flex}
       <div class="device-kind-grid" id="deviceKindGrid">
         <button class="device-kind active" type="button" data-device-kind="smartphone"><b>▯</b><span>Smartphone</span></button>
         <button class="device-kind" type="button" data-device-kind="tablet"><b>▭</b><span>Tablette</span></button>
-        <button class="device-kind" type="button" data-device-kind="tv"><b>▰</b><span>Télé / TV</span></button>
-        <button class="device-kind" type="button" data-device-kind="desktop"><b>▱</b><span>Bureau</span></button>
+        <button class="device-kind" type="button" data-device-kind="tv"><b>▰</b><span>Télévision</span></button>
+        <button class="device-kind" type="button" data-device-kind="desktop"><b>▱</b><span>Ordinateur</span></button>
         <button class="device-kind" type="button" data-device-kind="custom"><b>⌗</b><span>Autre</span></button>
       </div>
       <div class="custom-device-fields" id="customDeviceFields">
@@ -537,12 +538,12 @@ body.desktop .desktop-badge{display:inline-flex}
     <div class="source-choice-grid">
       <button class="source-choice desktop-only" id="studioCreateFromStart"><b>Créer une application</b><span>Choisir les formats téléphone, tablette, TV et ordinateur dès le départ.</span></button>
       <button class="source-choice desktop-only" id="studioOpenGithub"><b>GitHub</b><span>Coller le lien du dépôt et ouvrir sa copie locale.</span></button>
-      <button class="source-choice" id="openFolderBtn"><b>📁 Dossier local</b><span>PWA/HTML ou projet Android natif XML / Compose</span></button>
-      <button class="source-choice" id="openHtmlBtn"><b>📄 Fichier HTML / APK</b><span>Choisir une page HTML ou un APK Android</span></button>
-      <button class="source-choice desktop-only" id="openApkBtn"><b>▯ Fichier APK Android</b><span>Importer, modifier et reconstruire un APK installable</span></button>
-      <button class="source-choice desktop-only" id="openPhoneApkBtn"><b>Application du téléphone USB</b><span>Importer l’APK affiché sur le téléphone et comparer sa capture réelle</span></button><button class="source-choice" id="openDemoBtn"><b>✦ Démo intégrée</b><span>Tester avec Radio intelligente</span></button>
+      <button class="source-choice" id="openFolderBtn"><b>Dossier local</b><span>Ouvrir les fichiers d’une application ou d’un projet Android.</span></button>
+      <button class="source-choice" id="openHtmlBtn"><b>Page HTML</b><span>Ouvrir une application à partir de son fichier HTML.</span></button>
+      <button class="source-choice desktop-only" id="openApkBtn"><b>Application Android · APK</b><span>Ouvrir, modifier et tester un fichier APK.</span></button>
+      <button class="source-choice desktop-only" id="openPhoneApkBtn"><b>Téléphone connecté</b><span>Récupérer l’application ouverte sur un téléphone relié par USB.</span></button><button class="source-choice" id="openDemoBtn"><b>Essayer Studio</b><span>Découvrir les outils avec Radio intelligente.</span></button>
     </div>
-    <div class="native-note"><b>Applications natives :</b> un dossier Android avec sources est maintenant détecté et prévisualisé en mode XML/Compose. Les APK sont décodés pour modifier leurs ressources et interfaces Web ; le code natif reste disponible sous forme Smali.</div>
+    <div class="native-note">Les applications web s’exécutent dans Simulation. Pour un APK, utilisez <b>Lancer sur Android</b> après son ouverture.</div>
     <div class="status" id="sourceStatus"></div>
   </div>
 </div>
@@ -2224,7 +2225,7 @@ body.desktop .desktop-badge{display:inline-flex}
       });
       card.appendChild(body);
       var key=cardKey(card,index);
-      var shouldOpen=!!(prefs.rememberPanels&&Array.isArray(prefs.openPanels)&&prefs.openPanels.indexOf(key)>=0);
+      var shouldOpen=false;
       card.classList.toggle('collapsed',!shouldOpen);
       head.setAttribute('role','button');
       head.setAttribute('tabindex','0');

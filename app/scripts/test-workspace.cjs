@@ -32,6 +32,7 @@ const output=path.resolve(__dirname,'../../test-results');fs.mkdirSync(output,{r
   let sizes=await page.locator('.studio-pane:not([hidden])').evaluateAll(els=>els.map(e=>e.getBoundingClientRect().width));assert(Math.abs(sizes[0]-sizes[1])>10);report.keyboardResize=sizes;
   const box=await divider.boundingBox();await page.mouse.move(box.x+4,box.y+50);await page.mouse.down();await page.mouse.move(box.x+65,box.y+50,{steps:5});await page.mouse.up();await page.waitForTimeout(200);
   sizes=await page.locator('.studio-pane:not([hidden])').evaluateAll(els=>els.map(e=>e.getBoundingClientRect().width));report.pointerResize=sizes;assert(Math.abs(sizes[0]-report.keyboardResize[0])>20);
+  await page.locator('.studio-panel-menu > summary').click();
   await page.locator('#studioEqualWidths').click();
   await page.evaluate(()=>window.StudioWorkspace.setMode('simulation'));
   report.initialTitle=await sim.locator('#title').textContent();
