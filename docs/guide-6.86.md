@@ -25,6 +25,8 @@ Studio 6.86 lance désormais les APK contenant une interface web dans le moteur 
 
 Radio 1.13 réserve les marges réelles des barres système, de l'encoche et du clavier dans sa fenêtre native. Le bas reste accessible et le contenu peut défiler sur un petit écran.
 
+Oui ajoute le morceau aux Gardés. Non l'enregistre dans les Passés/Rejetés, sans l'ajouter aux Gardés. Revenir sur le dernier choix annule cette décision. Les choix sont sauvegardés localement ; dans la simulation Android, ils appartiennent à l'appareil virtuel. Ils ne modifient pas automatiquement la bibliothèque du téléphone. Pour transférer une bibliothèque, utiliser les fonctions de sauvegarde/restauration de Radio.
+
 Sources officielles :
 - https://developer.android.com/about/versions/15/behavior-changes-15
 - https://developer.android.com/develop/ui/views/layout/edge-to-edge
