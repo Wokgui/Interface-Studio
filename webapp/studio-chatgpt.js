@@ -19,7 +19,7 @@ new ResizeObserver(()=>{if(view&&!settingsOpen&&!suspended&&!minimized&&!manualF
 window.StudioChatGpt={
  setSelection(value){selectionContext=value;contextLabel.textContent=value?.selector?'Élément sélectionné : '+value.selector+(value.text?' · '+value.text:''):'';},
  refreshBounds(){if(view&&!settingsOpen&&!suspended&&!minimized&&!manualFloat&&!panel.hidden)bounds('open');},
- hideView(value){suspended=!!value;if(suspended&&view&&!panel.hidden&&!minimized){site.hidden=true;restore.hidden=false;api.chatGptView({action:'float'});}else if(!suspended&&!minimized&&!manualFloat){site.hidden=false;restore.hidden=true;this.refreshBounds();}},
+ hideView(value){suspended=!!value;if(suspended&&view&&!panel.hidden&&!minimized){site.hidden=true;restore.hidden=false;api.chatGptView({action:'close'});}else if(!suspended&&!minimized&&manualFloat&&view&&!panel.hidden){api.chatGptView({action:'float'});}else if(!suspended&&!minimized&&!manualFloat){site.hidden=false;restore.hidden=true;this.refreshBounds();}},
  dock(container,visible){docked=true;if(panel.parentElement!==container)container.append(panel);panel.classList.add('docked');panel.hidden=!visible;site.hidden=minimized||manualFloat;view=true;if(!visible)api.chatGptView({action:'close'});else requestAnimationFrame(()=>{if(!settingsOpen&&!suspended&&!minimized&&!manualFloat)bounds('open')});},
  setSource(s){if(source?.path===s?.path){source=s;return;}source=s;id=null;undo=null;$('studioChatApply').disabled=true;$('studioChatUndo').disabled=true;},
  setProvider(fn,reload){provider=fn;onReload=reload;},

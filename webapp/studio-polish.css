@@ -69,3 +69,31 @@ body.studio-layout .side :is(input,select,textarea){font-size:var(--chrome-text)
 body.studio-layout .studio-application-dialog{font-size:var(--chrome-text);padding:22px;border-radius:14px}.studio-application-dialog h2{font-size:1.05rem}.studio-application-dialog p{font-weight:450;line-height:1.5;color:#737a88}
 @media(max-width:1200px){body.studio-layout>header{padding:10px 12px}.studio-action-group>b{display:none}body.studio-layout .studio-toolbar{padding:8px 12px}body.studio-layout .brand small{display:none}#sourceLabel{max-width:210px}}
 @media(max-width:760px){body.studio-layout>header .top-actions{gap:7px}.studio-action-group>div{flex-wrap:wrap}.source-choice-grid{grid-template-columns:1fr}.device-kind-grid{grid-template-columns:repeat(5,minmax(0,1fr))}body.studio-layout .source-dialog{padding:16px}body.studio-layout .source-modal{padding:12px}.source-dialog{max-height:calc(100dvh - 24px)}}
+
+/* Adapt to the tools panel itself, including split layouts and large fonts. */
+body.studio-layout .studio-editor-body .side{container-type:inline-size;max-width:100%;box-sizing:border-box}
+.side :is(.field,.fields,.geometry,.toolbar,.card-body){min-width:0;max-width:100%;box-sizing:border-box}
+.side :is(.fields,.geometry){grid-template-columns:repeat(2,minmax(0,1fr));margin-block:10px;gap:12px}
+.side :is(input,select,textarea){max-width:100%;min-width:0;box-sizing:border-box}
+body.studio-layout .side :is(.btn,.tool){height:auto;line-height:1.4;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box}
+.side .card-body>.btn{display:flex!important;width:100%;margin-block:10px}
+.side .field label{display:block;overflow-wrap:anywhere}
+.side .toolbar{flex-wrap:wrap;gap:10px}
+.side .select-full-value{display:block;font-size:var(--chrome-small);line-height:1.5;color:#625a70;overflow-wrap:anywhere;margin:5px 0 0}
+.side .select-full-value[hidden]{display:none}
+@container (max-width:420px){.side :is(.fields,.fields.four,.geometry,.pro-grid,.align-grid,.smart-actions){grid-template-columns:minmax(0,1fr)!important}.side .toolbar>.btn{flex:1 1 100%}.side .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+body.multi-development-open .studio-chat-panel{visibility:hidden;pointer-events:none}
+#multiPreviewModal{background:#17131f;overflow:hidden}
+#multiPreviewModal .multi-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(360px,calc((100dvh - 130px)/2));align-content:start;overflow:auto;overscroll-behavior:contain}
+#multiPreviewModal .multi-card{min-height:0;grid-template-rows:auto minmax(0,1fr)}
+#multiPreviewModal .multi-viewport{min-height:0;height:100%;min-width:0}
+#multiPreviewModal .multi-card-head{flex-wrap:wrap;gap:8px}
+#multiPreviewModal .multi-inner{box-shadow:none}
+@media(max-width:1100px){#multiPreviewModal .multi-grid{grid-template-columns:minmax(0,1fr);grid-auto-rows:minmax(440px,calc(100dvh - 160px))}}
+
+#multiPreviewModal .multi-grid.actual-size{position:relative;overflow:hidden}
+#multiPreviewModal .multi-grid.actual-size .multi-card.expanded{position:absolute;inset:12px;z-index:2;min-width:0}
+#multiPreviewModal .multi-card[hidden]{display:none}
+#multiPreviewModal .multi-viewport.actual-size{display:block;overflow:auto;padding:12px;box-sizing:border-box}
+
+body.studio-layout .studio-toolbar label{flex-wrap:wrap;max-width:100%}body.studio-layout #studioScreenProfile{width:auto;max-width:min(440px,calc(100vw - 80px))}

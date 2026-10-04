@@ -437,7 +437,7 @@ body.desktop .desktop-badge{display:inline-flex}
 .flow-node strong{font-size:.75rem}.flow-node small{font-size:.64rem;color:#c9bfd2;word-break:break-all}.flow-node button{margin-top:auto}
 .flow-link{padding:8px 10px;margin:6px 0;border-radius:9px;background:#ffffff0d;font-size:.67rem;color:#ded5e6}
 .multi-card.editing{border-color:#b57cff;box-shadow:0 0 0 2px #b57cff66}
-.multi-edit-btn{min-height:27px;padding:0 8px;border:1px solid #ffffff2d;border-radius:7px;background:#ffffff0d;color:#fff;font-size:.62rem;font-weight:800}
+.multi-edit-btn,.multi-zoom-btn{min-height:27px;padding:0 8px;border:1px solid #ffffff2d;border-radius:7px;background:#ffffff0d;color:#fff;font-size:.62rem;font-weight:800}
 .native-item.selected{border-color:#a98dd8;background:#f1eaff}
 .native-item button{margin-top:6px}
 .matrix-item.fail{border-color:#efbdca;background:#fff8fa}.matrix-item.pass{border-color:#bfe7d5;background:#f7fffb}
@@ -3650,10 +3650,10 @@ body.desktop .desktop-badge{display:inline-flex}
     if(!rec||!rec.inner||!rec.iframe)return;
     var maxW=rec.viewport.clientWidth-24;
     var maxH=rec.viewport.clientHeight-24;
-    var scale=Math.min(maxW/rec.width,maxH/rec.height,1);
+    var dpr=window.devicePixelRatio||1;var scale=rec.actualSize?1:Math.min(maxW/rec.width,maxH/rec.height,1);scale=Math.floor(scale*rec.width*dpr)/(rec.width*dpr);
     if(!Number.isFinite(scale)||scale<=0)scale=.5;
-    rec.inner.style.width=Math.round(rec.width*scale)+'px';
-    rec.inner.style.height=Math.round(rec.height*scale)+'px';
+    rec.inner.style.width=(rec.width*scale)+'px';
+    rec.inner.style.height=(rec.height*scale)+'px';
     rec.iframe.style.width=rec.width+'px';
     rec.iframe.style.height=rec.height+'px';
     rec.iframe.style.transform='scale('+scale+')';
@@ -3738,7 +3738,7 @@ body.desktop .desktop-badge{display:inline-flex}
       var title=document.createElement('strong');title.textContent=cfg.name;
       var sizeLabel=document.createElement('span');sizeLabel.textContent=cfg.width+' × '+cfg.height;
       var editButton=document.createElement('button');editButton.className='multi-edit-btn';editButton.textContent='Éditer ici';
-      head.append(title,sizeLabel,editButton);
+      var zoomButton=document.createElement('button');zoomButton.className='multi-zoom-btn';zoomButton.textContent='Taille réelle';zoomButton.title='Lire cet écran à 100 %, avec défilement';head.append(title,sizeLabel,zoomButton,editButton);
       var viewport=document.createElement('div');viewport.className='multi-viewport';
       var inner=document.createElement('div');inner.className='multi-inner';
       var iframe=document.createElement('iframe');iframe.title=cfg.name;var multiUrl=new URL(currentSource.url,location.href);multiUrl.searchParams.set('visual-editor','1');multiUrl.searchParams.set('__ais_device','1');multiUrl.searchParams.delete('__ais_simulation');iframe.src=multiUrl.href;
@@ -3746,6 +3746,7 @@ body.desktop .desktop-badge{display:inline-flex}
       var rec={iframe:iframe,viewport:viewport,inner:inner,width:cfg.width,height:cfg.height,name:cfg.name,card:card,editButton:editButton};
       rec.resizeObserver=new ResizeObserver(function(){fitMultiRecord(rec)});rec.resizeObserver.observe(viewport);
       editButton.addEventListener('click',function(){activateMultiEditor(rec)});
+      zoomButton.addEventListener('click',function(){var actual=!rec.actualSize;multiFrames.forEach(function(item){item.actualSize=actual&&item===rec;item.card.classList.toggle('expanded',actual&&item===rec);item.card.inert=actual&&item!==rec;item.card.setAttribute('aria-hidden',String(actual&&item!==rec));item.viewport.classList.toggle('actual-size',item.actualSize);item.card.querySelector('.multi-zoom-btn').textContent=item.actualSize?'Revenir à la comparaison':'Taille réelle';});multiPreviewGrid.classList.toggle('actual-size',actual);requestAnimationFrame(function(){multiFrames.forEach(fitMultiRecord)});});
       multiFrames.push(rec);
       requestAnimationFrame(function(){fitMultiRecord(rec)});
     });

@@ -1,4 +1,15 @@
-# Interface Studio 6.86.0
+# Interface Studio 6.87.0
+
+## Nouveautés 6.87
+
+- Outils adaptatifs à la largeur de leur panneau : une colonne si la place manque, libellés et valeurs longues lisibles, boutons espacés, défilement vertical.
+- Comparaison multi-écrans : chaque écran tient entièrement dans sa carte ; les cartes se parcourent verticalement. « Taille réelle » affiche un écran à 100 % pour lire et éditer, puis revient à la comparaison sans recharger le projet.
+- ChatGPT reste conservé et masqué pendant la comparaison, sans fenêtre détachée devant les aperçus.
+- Android : rendu logiciel SwiftShader sans Vulkan par défaut, démarrage sans ancien instantané ; option graphique automatique disponible pour les applications nécessitant Vulkan. Le journal de panne est nettoyé et enregistré séparément.
+- Vérifications sur l’application Windows compilée, 18 configurations de lisibilité, gestes d’édition, création multi-formats et moteur Android 37.2.12 réellement installé sur le PC.
+
+La compatibilité graphique ne dispense pas des prérequis Android : virtualisation Windows disponible, mémoire et stockage suffisants. Les essais sur ce PC et plusieurs dimensions ne constituent pas un essai sur toutes les machines. Les données des appareils virtuels existants sont conservées.
+
 
 ## Nouveautés 6.86
 
@@ -129,3 +140,5 @@ La base locale complète 6.73 a fourni les modules absents du dépôt 6.78. Les 
 Dans **Ouvrir une application → GitHub**, coller par exemple `https://github.com/Wokgui/L4D2`, puis cliquer **Ouvrir l’application**. Studio télécharge une copie locale, détecte sa page HTML ou son projet Android et l’ouvre. Aucun téléchargement ZIP manuel n’est nécessaire. Les changements effectués dans Studio restent locaux ; ce parcours ne publie rien sur le dépôt d’origine.
 
 Ce parcours prend en charge les dépôts publics GitHub et les liens de branche. Pour un dépôt privé, ouvrir une copie locale avec **Dossier local**. Les applications web qui exigent une compilation ou un serveur doivent encore être préparées avant leur ouverture. Le parcours L4D2 est vérifié par `npm run test:github --prefix app` (récupération réelle, navigation, recherche, tirage et comparaison des formats).
+
+La lecture de la hiérarchie Android utilise un fichier neuf et validé à chaque demande, même si la commande de capture se termine avec une erreur après avoir écrit son résultat. Aucun résultat ancien n’est réutilisé.

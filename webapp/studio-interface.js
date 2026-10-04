@@ -29,6 +29,12 @@
   boxes[i].append(card);
  }
  for(const box of boxes)if(box.children.length===1)box.remove();
+ let selectRefreshPending=false;
+ const refreshSelectValues=()=>{selectRefreshPending=false;for(const select of side.querySelectorAll('select:not([multiple])')){const rect=select.getBoundingClientRect();if(!rect.width)continue;const text=select.selectedOptions[0]?.textContent||'';let caption=select.nextElementSibling;if(!caption?.classList.contains('select-full-value')){caption=document.createElement('span');caption.className='select-full-value';caption.id='selected-value-'+(select.id||Math.random().toString(36).slice(2));caption.hidden=true;select.after(caption);select.setAttribute('aria-describedby',((select.getAttribute('aria-describedby')||'')+' '+caption.id).trim());}const style=getComputedStyle(select);const canvas=document.createElement('canvas');const context=canvas.getContext('2d');if(!context)continue;context.font=style.font||style.fontSize+' '+style.fontFamily;const available=rect.width-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-32;caption.textContent=text;caption.hidden=context.measureText(text).width<=available;select.title=text;}};
+ const scheduleSelectValues=()=>{if(!selectRefreshPending){selectRefreshPending=true;requestAnimationFrame(refreshSelectValues)}};
+ side.addEventListener('click',scheduleSelectValues);side.addEventListener('change',scheduleSelectValues);new MutationObserver(scheduleSelectValues).observe(side,{subtree:true,attributes:true,attributeFilter:['class','style','open']});side.addEventListener('toggle',scheduleSelectValues,true);
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(scheduleSelectValues).observe(side);
+ window.addEventListener('resize',scheduleSelectValues);document.fonts?.ready.then(scheduleSelectValues);
  window.StudioInterface={collapseEditing(){side.querySelectorAll('details').forEach(el=>el.open=false);side.querySelectorAll('.card').forEach(card=>{card.classList.add('collapsed');card.querySelector(':scope > h2')?.setAttribute('aria-expanded','false');});side.scrollTop=0;}};
  window.StudioInterface.collapseEditing();
  const overlays=[...document.querySelectorAll('.source-modal,.multi-modal,.diff-modal,.flow-modal,.matrix-modal,.repair-modal')];let overlayOpen=false;
