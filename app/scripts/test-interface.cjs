@@ -1,0 +1,26 @@
+const {JSDOM,VirtualConsole}=require('jsdom'),fs=require('fs'),path=require('path'),assert=require('assert/strict');
+const root=path.resolve(__dirname,'../../webapp');
+const dom=new JSDOM(fs.readFileSync(path.join(root,'visual-editor.html'),'utf8'),{url:'https://studio.test/visual-editor.html',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:new VirtualConsole()});
+const w=dom.window,errors=[],calls=[];
+w.ResizeObserver=class{observe(){} disconnect(){}};
+w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
+w.HTMLElement.prototype.scrollIntoView=function(){};
+Object.defineProperties(w.screen,{width:{value:1920},height:{value:1080}});
+w.AppInterfaceStudio={isDesktop:false,chatGptView:async p=>{calls.push(p);return {ok:true}},chatGptProject:async()=>({ok:true,files:[],selected:[]}),onChatGptAccount(){},onChatGptStatus(){},onGithubProgress(){},onAndroidVideo(){},onAndroidStatus(){},onAndroidRuntimeProgress(){},onAndroidProgress(){}};
+w.addEventListener('error',e=>errors.push(e.error?.stack||e.message));
+for(const script of w.document.querySelectorAll('script')){if(script.type&&script.type!=='text/javascript')continue;try{const source=script.src?fs.readFileSync(path.join(root,path.basename(script.src)),'utf8'):script.textContent;w.eval(source)}catch(e){errors.push(e.stack)}}
+const tick=()=>new Promise(r=>setTimeout(r,60));
+(async()=>{await tick();assert.deepEqual(errors,[]);const d=w.document;
+ assert(w.StudioWorkspace);assert(w.StudioCommands);assert.equal(d.documentElement.style.getPropertyValue('--ui-font-scale'),'1.3');
+ assert.equal(d.getElementById('uiFontScale').value,'130');
+ w.StudioWorkspace.setMode('split');w.StudioWorkspace.movePane('simulation',-1);
+ assert.deepEqual(Array.from(w.StudioWorkspace.getPaneOrder()),['simulation','editor','chat']);assert.equal(d.getElementById('studioPane-simulation').style.gridColumn,'1');assert.equal(d.getElementById('studioPane-editor').style.gridColumn,'3');
+ assert.equal(JSON.parse(w.localStorage.getItem('ais-workspace-v681')).order[0],'simulation');
+ d.getElementById('studioEditorTools').click();assert(d.body.classList.contains('editor-tools-open'));assert(d.querySelector('#studioPane-editor .side'));d.querySelector('.studio-tools-head button').click();assert(!d.body.classList.contains('editor-tools-open'));
+ assert(d.querySelectorAll('.studio-tool-category').length>=4);assert(!d.querySelector('.side > .card'));assert.equal(d.querySelectorAll('.top-actions .studio-action-group').length,5);
+ const chat=d.querySelector('[data-pane="chat"]');chat.checked=true;chat.dispatchEvent(new w.Event('change'));await tick();w.StudioChatGpt.hideView(true);assert.equal(calls.at(-1).action,'float');w.StudioChatGpt.hideView(false);await tick();assert.equal(calls.at(-1).action,'open');
+ d.getElementById('studioChatMinimize').click();assert.equal(calls.at(-1).action,'minimize');assert(!d.querySelector('.studio-chat-restore').hidden);d.querySelector('.studio-chat-restore button').click();await tick();assert.equal(calls.at(-1).action,'open');
+ d.getElementById('commandsBtn').click();d.querySelector('.command-dialog > button').click();const binding=d.querySelector('input[aria-label="Raccourci : Pivoter l’écran portrait / paysage"]');binding.dispatchEvent(new w.KeyboardEvent('keydown',{key:'r',ctrlKey:true,shiftKey:true,bubbles:true}));assert.equal(w.StudioCommands.config().bindings['Pivoter l’écran portrait / paysage'],'ctrl+r+shift');
+ d.getElementById('studioActionName').value='Ma rotation';d.getElementById('studioActionCommand').value='Pivoter l’écran portrait / paysage';d.getElementById('studioSaveAction').click();assert(w.StudioCommandRegistry.commands.some(c=>c.label==='Ma rotation'));
+ const recorded=JSON.parse(w.localStorage.getItem('ais-custom-commands-v1'));assert.equal(recorded.actions[0].name,'Ma rotation');
+ assert.deepEqual(errors,[]);console.log('PASS: font migration, reordered persisted panes, tools dock/close, categories, ChatGPT float/minimize/restore, custom shortcuts and saved actions.');w.close();})().catch(e=>{console.error(e);w.close();process.exitCode=1});

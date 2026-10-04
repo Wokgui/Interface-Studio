@@ -51,9 +51,11 @@
   try { preferences = JSON.parse(localStorage.getItem('ais-workspace-v681') || '{}'); } catch {}
   let chosen = Array.isArray(preferences.chosen) ? preferences.chosen.filter(x => frames[x]) : ['editor', 'simulation'];
   if (!chosen.length) chosen = ['editor'];
+  let order = Array.isArray(preferences.order) ? [...new Set(preferences.order.filter(x=>frames[x]))] : [];
+  for(const id of Object.keys(frames))if(!order.includes(id))order.push(id);
   const ratios = preferences.ratios || {};
   let visible = [], weights = [];
-  const persist = () => localStorage.setItem('ais-workspace-v681', JSON.stringify({chosen, ratios}));
+  const persist = () => localStorage.setItem('ais-workspace-v681', JSON.stringify({chosen, ratios, order}));
   const send = (type, payload = {}) => iframe.contentWindow?.postMessage({source:'ais-simulation-host', type, payload}, '*');
   function fit() {
     const profile=currentProfile(), responsive=screenSelect.value==='responsive';
@@ -76,7 +78,7 @@
     requestAnimationFrame(fit);
   }
   function render() {
-    visible = mode==='editor' ? ['editor'] : mode==='simulation' ? ['simulation'] : ['editor','simulation','chat'].filter(x => chosen.includes(x));
+    visible = mode==='editor' ? ['editor'] : mode==='simulation' ? ['simulation'] : order.filter(x => chosen.includes(x));
     const key = visible.join(',');
     const saved = ratios[key];
     weights = Array.isArray(saved) && saved.length===visible.length && saved.every(w => Number.isFinite(w) && w>0) ? saved.slice() : visible.map(() => 1);
@@ -115,7 +117,20 @@
   toolbar.querySelectorAll('[data-studio-mode]').forEach(x=>x.onclick=()=>{mode=x.dataset.studioMode;render();});
   toolbar.querySelectorAll('[data-pane]').forEach(x=>x.onchange=()=>{chosen=[...toolbar.querySelectorAll('[data-pane]:checked')].map(x=>x.dataset.pane);if(!chosen.length)chosen=[x.dataset.pane];mode='split';persist();render();});
   document.getElementById('studioEqualWidths').onclick=()=>{ratios[visible.join(',')]=visible.map(()=>1);persist();render();};
-  document.getElementById('studioEditorTools').onclick=()=>{document.body.classList.toggle('editor-tools-open');window.StudioChatGpt?.hideView?.(document.body.classList.contains('editor-tools-open'));};
+  const side=document.querySelector('.side');
+  const editorBody=document.createElement('div');editorBody.className='studio-editor-body';editor.append(editorBody);editorBody.append(workspace,side);
+  const toolsHead=document.createElement('div');toolsHead.className='studio-tools-head';toolsHead.innerHTML='<b>Outils d’édition</b><button class="btn" aria-label="Fermer les outils d’édition">Fermer ×</button>';side.prepend(toolsHead);
+  function toggleTools(value){document.body.classList.toggle('editor-tools-open',value);document.getElementById('studioEditorTools').setAttribute('aria-expanded',String(value));requestAnimationFrame(fit);}
+  toolsHead.querySelector('button').onclick=()=>toggleTools(false);
+  document.getElementById('studioEditorTools').onclick=()=>toggleTools(!document.body.classList.contains('editor-tools-open'));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('editor-tools-open')){toggleTools(false);}});
+  function movePane(id,delta){const candidates=mode==='split'&&visible.includes(id)?order.filter(x=>visible.includes(x)):order;const index=candidates.indexOf(id),next=index+delta;if(index<0||next<0||next>=candidates.length)return;const a=order.indexOf(id),b=order.indexOf(candidates[next]);[order[a],order[b]]=[order[b],order[a]];persist();render();}
+  for(const [id,el] of Object.entries(frames)){const bar=el.querySelector('.studio-pane-bar');if(!bar)continue;const controls=document.createElement('span');controls.className='studio-pane-order';for(const [delta,text] of [[-1,'←'],[1,'→']]){const b=document.createElement('button');b.className='btn';b.textContent=text;b.title='Déplacer '+(delta<0?'à gauche':'à droite');b.onclick=()=>movePane(id,delta);controls.append(b);}bar.append(controls);}
+  toolbar.insertAdjacentHTML('beforeend','<label>Ordre <select id="studioPaneOrder" aria-label="Panneau à déplacer"><option value="editor">Éditeur</option><option value="simulation">Simulation</option><option value="chat">ChatGPT</option></select></label><button class="btn" id="studioPaneLeft">← Gauche</button><button class="btn" id="studioPaneRight">Droite →</button>');
+  document.getElementById('studioPaneLeft').onclick=()=>movePane(document.getElementById('studioPaneOrder').value,-1);
+  document.getElementById('studioPaneRight').onclick=()=>movePane(document.getElementById('studioPaneOrder').value,1);
+  for(const [id,el] of Object.entries(frames)){el.draggable=false;const bar=el.querySelector('.studio-pane-bar');if(!bar)continue;bar.draggable=true;bar.addEventListener('dragstart',e=>e.dataTransfer.setData('application/x-studio-pane',id));el.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('application/x-studio-pane'))e.preventDefault();});el.addEventListener('drop',e=>{const from=e.dataTransfer.getData('application/x-studio-pane');if(!frames[from]||from===id)return;e.preventDefault();order.splice(order.indexOf(from),1);order.splice(order.indexOf(id),0,from);persist();render();});}
+
   document.getElementById('studioSelectElement').onclick=e=>{selecting=!selecting;e.target.classList.toggle('active',selecting);e.target.textContent=selecting?'Interagir':'Sélectionner';send('inspect',{active:selecting});window.StudioNativeSimulation?.setInspect(selecting);};
   document.getElementById('studioReloadSimulation').onclick=()=>{iframe.contentWindow?.location.reload();};
   function setSource(next) {
@@ -145,7 +160,7 @@
       if(d.type==='css'){send('css',{css:d.payload?.css||''});}
     }
   });
-  window.StudioWorkspace={setSource,fit,setNativeSelection:p=>{lastSelection=p;},useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();window.StudioNativeSimulation?.resize(currentProfile());},setMode(next){mode=next;render();},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
+  window.StudioWorkspace={setSource,fit,movePane,getPaneOrder:()=>order.slice(),setNativeSelection:p=>{lastSelection=p;},useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();window.StudioNativeSimulation?.resize(currentProfile());},setMode(next){mode=next;render();},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
   screenSelect.addEventListener('change',()=>window.StudioNativeSimulation?.resize(currentProfile()));
   document.getElementById('studioRotateScreen').addEventListener('click',()=>window.StudioNativeSimulation?.resize(currentProfile()));
   document.getElementById('studioApplyScreen').addEventListener('click',()=>window.StudioNativeSimulation?.resize(currentProfile()));

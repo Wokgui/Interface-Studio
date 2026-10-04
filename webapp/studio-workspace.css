@@ -51,7 +51,7 @@ body.multi-development-open #multiPreviewModal{padding-right:360px}
 .studio-splitter:focus,.studio-splitter:hover{background:#e8dcff;outline:none}
 .studio-chat-slot{flex:1;min-height:0;position:relative}
 body.studio-layout .studio-chat-panel.docked{position:relative!important;inset:auto!important;width:100%!important;height:100%;border:0;border-radius:0;box-shadow:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
-body.studio-layout .studio-chat-panel.docked> :not(.studio-chat-header):not(#studioChatSite):not(.studio-chat-settings){display:none!important}
+body.studio-layout .studio-chat-panel.docked> :not(.studio-chat-header):not(#studioChatSite):not(.studio-chat-settings):not(.studio-chat-restore){display:none!important}
 .studio-chat-header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 9px;flex:none;border-bottom:1px solid #ddd3ed;font-size:12px}
 .studio-chat-panel.docked #studioChatSite{flex:1;min-height:0;height:auto;margin:0;border-radius:0;display:block}
 .studio-chat-settings[hidden]{display:none!important}
@@ -59,3 +59,42 @@ body.studio-layout .studio-chat-panel.docked> :not(.studio-chat-header):not(#stu
 body.studio-layout .side{position:fixed;right:12px;top:140px;bottom:12px;width:min(404px,calc(100vw - 24px));height:auto;z-index:2000;display:none;box-shadow:0 12px 40px #30234444}
 body.studio-layout.editor-tools-open .side{display:flex}
 .studio-runtime-status{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50%}
+
+/* Interface chrome shares one readable size; application viewports remain independent. */
+body.studio-layout :is(header,.studio-toolbar,.side,.source-modal,.settings-modal,.command-palette,.studio-application-dialog,.studio-chat-panel,.multi-head) :is(button,input,select,textarea,label,p,b,strong,span,summary,div,pre,code){font-size:1rem}
+body.studio-layout :is(header,.studio-toolbar,.side,.studio-pane-bar,.studio-chat-header){font-size:1rem}
+body.studio-layout .side :is(h2,summary){text-align:center}
+body.studio-layout .side h2 small{display:none}
+body.studio-layout :is(.hint,.settings-note,.field label,.source-dialog-head span){font-size:.88rem}
+.studio-pane-bar{height:auto;min-height:42px;flex-wrap:wrap;justify-content:center;text-align:center}
+.studio-pane-bar button{font-size:1rem;min-height:32px}
+.studio-editor-body{display:flex;flex:1;min-height:0;overflow:hidden}
+body.studio-layout .studio-editor-body .side{position:relative;inset:auto;width:clamp(270px,38%,440px);flex:none;height:100%;min-height:0;overflow:auto;box-shadow:none;border-left:1px solid var(--line);z-index:auto}
+body.studio-layout.editor-tools-open .studio-editor-body .side{display:flex;flex-direction:column}
+.studio-tools-head{display:flex;justify-content:center;align-items:center;gap:8px;position:sticky;top:0;background:white;z-index:5;padding:8px;flex:none}
+.studio-pane-order{display:flex;gap:4px}
+.studio-action-group{border:1px solid var(--line);border-radius:10px;padding:5px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.studio-action-group>summary{text-align:center;cursor:pointer;padding:4px 10px;font-weight:750}
+.studio-action-group>div{display:flex;justify-content:center;flex-wrap:wrap;gap:6px}
+.studio-tool-category{border:1px solid var(--line);border-radius:12px;background:white;margin:6px;padding:6px;flex:none}
+.studio-tool-category>summary{text-align:center;cursor:pointer;font-weight:800;padding:10px}
+.studio-tool-category .card{margin:8px 0;box-shadow:none}
+.studio-toolbar{justify-content:center}
+body.studio-layout header .top-actions{margin-left:0;justify-content:center;flex-wrap:wrap}
+body.studio-layout header{justify-content:center}
+#studioChatPrompt{min-height:180px;height:28vh;resize:vertical}
+.studio-chat-panel.docked #studioChatSite{margin:0!important;min-height:0!important}
+.studio-chat-restore{padding:12px;text-align:center;display:grid;gap:8px}
+.studio-chat-restore[hidden]{display:none}
+.studio-command-row{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:8px;align-items:center;margin:7px 0}
+@media(max-width:900px){.studio-command-row{grid-template-columns:1fr}.studio-editor-body{flex-direction:column}body.studio-layout .studio-editor-body .side{width:100%;max-height:48%;}}
+
+body.studio-layout .studio-chat-panel.docked #studioChatSite[hidden]{display:none!important}
+
+body.studio-layout :is(header,.studio-toolbar,.side,.source-modal,.settings-modal,.command-palette,.studio-application-dialog,.studio-chat-panel,.multi-head) *{font-size:1rem!important}
+body.studio-layout :is(header,.side,.source-modal) small{font-size:.88rem!important}
+body.studio-layout .studio-action-group>div{align-items:center}
+body.studio-layout .side :is(.toolbar,.settings-actions,.pro-grid,.align-grid,.smart-actions){justify-content:center;text-align:center}
+body.studio-layout .side :is(.tool,.btn){white-space:normal;overflow-wrap:anywhere;padding:7px;min-height:40px;height:auto}
+
+body.studio-layout .side h2{justify-content:center;gap:8px}body.studio-layout .side h2{font-size:.94rem!important}

@@ -638,7 +638,7 @@ body.desktop .desktop-badge{display:inline-flex}
     <div class="settings-grid">
       <div class="settings-row">
         <label for="uiFontScale">Taille du texte de l’interface</label>
-        <input id="uiFontScale" type="range" min="85" max="130" step="5" value="100">
+        <label><input id="uiAutoFont" type="checkbox" checked> Adapter automatiquement au format d’écran</label><input id="uiFontScale" type="range" min="85" max="130" step="5" value="100">
         <div class="settings-value"><span id="uiFontScaleValue">100</span> %</div>
       </div>
       <div class="settings-row">
@@ -1847,7 +1847,7 @@ body.desktop .desktop-badge{display:inline-flex}
 
   var PREF_KEY='app-interface-studio.preferences.v1';
   var RECOVERY_KEY='app-interface-studio.recovery.v1';
-  var defaultPrefs={fontScale:100,density:'normal',animations:true,defaultResponsive:true,rememberPanels:false,openPanels:[],autoRecovery:true,smartGuides:true,guideThreshold:5,customGuidesX:[],customGuidesY:[],nudgeStep:1,gridStep:1,showGridOverlay:false,showColumnGrid:false,columnGridCount:4,columnGridMargin:16,columnGridGutter:12,referenceMode:'overlay',referenceOpacity:50,referenceReveal:50,referenceOffsetX:0,referenceOffsetY:0};
+  var defaultPrefs={fontScale:130,autoFont:true,density:'normal',animations:true,defaultResponsive:true,rememberPanels:false,openPanels:[],autoRecovery:true,smartGuides:true,guideThreshold:5,customGuidesX:[],customGuidesY:[],nudgeStep:1,gridStep:1,showGridOverlay:false,showColumnGrid:false,columnGridCount:4,columnGridMargin:16,columnGridGutter:12,referenceMode:'overlay',referenceOpacity:50,referenceReveal:50,referenceOffsetX:0,referenceOffsetY:0};
   var prefs=Object.assign({},defaultPrefs);
 
   function loadPrefs(){
@@ -1859,10 +1859,15 @@ body.desktop .desktop-badge{display:inline-flex}
   }
 
   function applyPrefs(){
-    document.documentElement.style.setProperty('--ui-font-scale',String((Number(prefs.fontScale)||100)/100));
+    if(!prefs.fontMigration684){prefs.fontScale=130;prefs.autoFont=true;prefs.fontMigration684=true;savePrefs();}
+    if(!prefs.fontReference){prefs.fontReference={width:screen.width||1920,height:screen.height||1080};savePrefs();}
+    var reference=prefs.fontReference;
+    var screenFactor=prefs.autoFont===false?1:Math.max(.75,Math.min(1.35,Math.sqrt((screen.width*screen.height)/(reference.width*reference.height))));
+    document.documentElement.style.setProperty('--ui-font-scale',String((Number(prefs.fontScale)||130)/100*screenFactor));
     document.body.dataset.density=prefs.density||'normal';
     document.body.classList.toggle('no-animations',prefs.animations===false);
-    uiFontScale.value=Number(prefs.fontScale)||100;
+    document.getElementById('uiAutoFont').checked=prefs.autoFont!==false;
+    uiFontScale.value=Number(prefs.fontScale)||130;
     uiFontScaleValue.textContent=String(Number(prefs.fontScale)||100);
     uiDensity.value=prefs.density||'normal';
     uiAnimations.checked=prefs.animations!==false;
@@ -2200,14 +2205,14 @@ body.desktop .desktop-badge{display:inline-flex}
 
   function syncOpenPanels(){
     if(!prefs.rememberPanels)return;
-    prefs.openPanels=Array.from(document.querySelectorAll('.side > .card')).map(function(card,index){
+    prefs.openPanels=Array.from(document.querySelectorAll('.side .card')).map(function(card,index){
       return card.classList.contains('collapsed')?null:cardKey(card,index);
     }).filter(Boolean);
     savePrefs();
   }
 
   function initializeCards(){
-    document.querySelectorAll('.side > .card').forEach(function(card,index){
+    document.querySelectorAll('.side .card').forEach(function(card,index){
       if(card.dataset.accordionReady==='1')return;
       card.dataset.accordionReady='1';
       var head=card.querySelector(':scope > h2');
@@ -5108,6 +5113,7 @@ body.desktop .desktop-badge{display:inline-flex}
   }
 
   function sendKeyboard(event){
+    if(window.StudioCommands?.handleKey(event))return;
     var key=event.key;
     var modifier=event.ctrlKey||event.metaKey;
     var lower=String(key||'').toLowerCase();
@@ -5227,6 +5233,7 @@ body.desktop .desktop-badge{display:inline-flex}
     {label:'Raccourcis clavier : flèches déplacer · Maj+flèches redimensionner',hint:'?',run:function(){}}
   ];
 
+  window.StudioCommandRegistry={commands,refresh:()=>renderCommands(commandSearch.value),post};
   function renderCommands(filter){
     var q=String(filter||'').trim().toLowerCase();
     commandList.innerHTML='';
@@ -5241,7 +5248,7 @@ body.desktop .desktop-badge{display:inline-flex}
       var hint=document.createElement('span');hint.textContent=item.hint||'';
       btn.append(label,hint);
       btn.addEventListener('mouseenter',function(){commandActiveIndex=index;syncCommandActive()});
-      btn.addEventListener('click',function(){closeCommandPalette();item.run()});
+      btn.addEventListener('click',function(){closeCommandPalette();window.StudioCommands.execute(item)});
       commandList.appendChild(btn);
     });
     if(!commandList.childNodes.length)commandList.innerHTML='<div class="hint" style="padding:14px">Aucune commande trouvée.</div>';
@@ -5264,7 +5271,7 @@ body.desktop .desktop-badge{display:inline-flex}
     var item=filteredCommands[commandActiveIndex];
     if(!item)return;
     closeCommandPalette();
-    item.run();
+    window.StudioCommands.execute(item);
   }
 
   function openCommandPalette(filter){
@@ -6137,6 +6144,8 @@ body.desktop .desktop-badge{display:inline-flex}
   document.getElementById('settingsBtn').addEventListener('click',function(){settingsModal.hidden=false});
   document.getElementById('settingsCloseBtn').addEventListener('click',function(){settingsModal.hidden=true});
   document.getElementById('settingsDoneBtn').addEventListener('click',function(){settingsModal.hidden=true});
+  document.getElementById('uiAutoFont').onchange=function(){prefs.autoFont=this.checked;applyPrefs();savePrefs()};
+  window.addEventListener('resize',applyPrefs);
   uiFontScale.addEventListener('input',function(){
     prefs.fontScale=Number(uiFontScale.value)||100;
     uiFontScaleValue.textContent=String(prefs.fontScale);
@@ -6163,7 +6172,7 @@ body.desktop .desktop-badge{display:inline-flex}
   document.getElementById('resetUiSettings').addEventListener('click',function(){
     prefs=Object.assign({},defaultPrefs);
     savePrefs();applyPrefs();
-    document.querySelectorAll('.side > .card').forEach(function(card){
+    document.querySelectorAll('.side .card').forEach(function(card){
       card.classList.add('collapsed');
       var h=card.querySelector(':scope > h2');if(h)h.setAttribute('aria-expanded','false');
     });
@@ -6198,5 +6207,7 @@ body.desktop .desktop-badge{display:inline-flex}
 <script src="studio-application.js"></script>
 <script src="studio-native-simulation.js"></script>
 <script src="studio-workspace.js"></script>
+<script src="studio-interface.js"></script>
+<script src="studio-commands.js"></script>
 </body>
 </html>

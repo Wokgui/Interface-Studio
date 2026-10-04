@@ -1,4 +1,16 @@
-# Interface Studio 6.83.0
+# Interface Studio 6.84.0
+
+## Interface personnalisable
+
+- Déplacer les panneaux avec les flèches de leur titre, par glisser-déposer, ou avec les commandes d’ordre de la barre supérieure. L’ordre et les largeurs sont conservés.
+- Le texte commence à l’équivalent du précédent maximum (130 %), puis s’adapte au format de l’écran. Paramètres permet d’ajuster la taille ou de désactiver l’adaptation. Les contenus des applications ne sont pas modifiés.
+- Outils édition ouvre un dock dans le panneau Éditeur. Fermer ou Échap le referme. Les fonctions sont classées dans cinq catégories repliables.
+- ChatGPT conserve une seule discussion lors des passages entre le dock et sa fenêtre séparée. Détacher, Réduire et Rétablir permettent de garder la discussion ouverte pendant le développement multi-formats. La zone de prompt est agrandie.
+- Préférences → Commandes → Modifier les raccourcis permet de réassigner les touches, de créer une action à partir d’une commande ou d’enregistrer des boutons et réglages des outils. Les actions sont conservées localement.
+- Les boutons supérieurs sont regroupés en Projet, Développer, Android, ChatGPT et Préférences. Les options Android et ChatGPT restent accessibles dans leurs catégories.
+- Trois propositions d’icône se trouvent dans `design/`. L’icône actuelle reste utilisée jusqu’au choix d’une proposition.
+
+Validation 6.84 : tests de commandes et de persistance ; vérification Chromium à 1920, 1520 et 1100 pixels, avec deux et trois panneaux, dock intégré et police uniforme. Le cycle de vie de la vue ChatGPT est contrôlé avec des doubles Electron ; la conversation authentifiée et l’exécutable Windows n’ont pas été exécutés dans cet environnement.
 
 ## Créer et développer dans plusieurs formats
 
