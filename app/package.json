@@ -1,6 +1,6 @@
 {
   "name": "app-interface-studio",
-  "version": "6.88.0",
+  "version": "6.89.0",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
@@ -55,7 +55,8 @@
       "android-ui.cjs",
       "studio-project.cjs",
       "studio-github.cjs",
-      "chatgpt-composer.cjs"
+      "chatgpt-composer.cjs",
+      "emulator-session.cjs"
     ],
     "extraResources": [
       {

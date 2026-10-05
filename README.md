@@ -1,4 +1,11 @@
-# Interface Studio 6.88.0
+# Interface Studio 6.89.0
+
+## Nouveautés 6.89
+
+- Détection d'un émulateur existant par son processus et son appareil virtuel, même lorsqu'il n'est pas encore disponible dans ADB. Réutilisation après confirmation du démarrage Android, au lieu de lancer une seconde instance du même appareil.
+- Identification par propriété Android avec retour à la console en secours ; délais bornés pour les commandes de connexion.
+- Pour les APK web, retour automatique à Simulation locale si la vérification Android échoue. Le message reste visible au-dessus de l'application.
+- Erreur de double instance reformulée ; le journal technique n'envahit plus le panneau. Les détails des erreurs natives restent limités à une zone défilante.
 
 ## Nouveautés 6.88
 
