@@ -1,4 +1,14 @@
-# Interface Studio 6.91.0
+# Interface Studio 6.92.0
+
+## Nouveautés 6.92
+
+- Radio intelligente 1.14 : marges Android réelles, navigation visible, contenu défilant, paysage et clavier pris en compte. Sources maintenables dans examples/Radio-intelligente-1.14.
+- Studio lit automatiquement le profil embarqué dans l'APK. Éditeur et Simulation partagent les mêmes dimensions et marges. Aucun émulateur nécessaire pour utiliser la simulation locale.
+- Réservation de la barre latérale en paysage sur téléphone, profil des gestes Android API 35 mesuré à 32 px, couleurs de barres définies par le profil de l'application.
+- Les mesures d'un appareil connecté et les marges réglées manuellement remplacent le profil automatique. Le choix est enregistré dans le projet.
+- Test du même APK sur Android API 35 et dans Studio : Radio et Musique sur téléphone compact, standard, large, paysage, tablette et navigation par gestes. Contrôles natifs et locaux des votes, de la lecture, de la persistance ; clavier et grands textes sur Android. Deux et trois panneaux conservés.
+
+Les tailles de référence reproduisent les configurations vérifiées ; elles ne remplacent pas les mesures de chaque constructeur. Les icônes système, les polices et les fichiers personnels du téléphone peuvent différer. Le test est effectué sur Android émulé, pas sur le téléphone physique.
 
 ## Nouveautés 6.91
 
@@ -179,3 +189,7 @@ Dans **Ouvrir une application → GitHub**, coller par exemple `https://github.c
 Ce parcours prend en charge les dépôts publics GitHub et les liens de branche. Pour un dépôt privé, ouvrir une copie locale avec **Dossier local**. Les applications web qui exigent une compilation ou un serveur doivent encore être préparées avant leur ouverture. Le parcours L4D2 est vérifié par `npm run test:github --prefix app` (récupération réelle, navigation, recherche, tirage et comparaison des formats).
 
 La lecture de la hiérarchie Android utilise un fichier neuf et validé à chaque demande, même si la commande de capture se termine avec une erreur après avoir écrit son résultat. Aucun résultat ancien n’est réutilisé.
+
+### Rejouer la comparaison Radio 1.14
+
+Dans PowerShell, définir `$env:AIS_TEST_APK` avec le chemin de l’APK 1.14 téléchargé, puis exécuter `npm run test:native` depuis `app`. Le test crée son propre appareil virtuel et ne vide que les données de cette application dans cet appareil de test. Le SDK Android API 35 doit être disponible ; cela concerne le banc de vérification, pas la Simulation utilisée au quotidien. Les rapports et captures sont enregistrés dans `test-results/shared-radio`.

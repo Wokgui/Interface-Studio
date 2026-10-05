@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "systemBarsLayout": "inset",
+  "handling": "native-window-insets",
+  "keyboard": "resize",
+  "layout": "adaptive-scroll-with-fixed-navigation",
+  "defaults": {
+    "topInset": 24,
+    "threeButtonInset": 48,
+    "gestureInset": 32,
+    "landscapeNavigation": "right-on-phone",
+    "apiLevel": 35
+  },
+  "chrome": {
+    "statusBarColor": "#ffffff",
+    "statusBarTextColor": "#666666",
+    "navigationBarColor": "#333333"
+  }
+}

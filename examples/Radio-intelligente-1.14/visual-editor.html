@@ -1,0 +1,2730 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>App Interface Studio</title>
+<style>
+:root{
+  color-scheme:light;
+  --ui-font-scale:1;
+  --panel-pad:12px;
+  --ink:#1f1c2b;
+  --muted:#777184;
+  --line:#e5dfec;
+  --accent:#6f49f5;
+  --accent2:#bb5df0;
+  --accentSoft:#f0eaff;
+  --panel:#ffffff;
+  --desk:#f5f3f8;
+  --soft:#faf9fc;
+  --danger:#b13a5c;
+  --ok:#23805d;
+  --shadow:0 14px 36px rgba(44,31,72,.08);
+  --shadowStrong:0 26px 70px rgba(44,31,72,.18);
+}
+*{box-sizing:border-box}
+html{font-size:calc(14px * var(--ui-font-scale))}
+html,body{margin:0;min-height:100%}
+body{font:600 1rem/1.35 system-ui,-apple-system,"Segoe UI Variable","Segoe UI",sans-serif;color:var(--ink);overflow:hidden;background:
+  radial-gradient(circle at 18% -10%,#efe7ff 0,transparent 32%),
+  radial-gradient(circle at 105% 18%,#f9eaff 0,transparent 26%),
+  var(--desk)}
+button,select,input,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.42}
+header{
+  position:sticky;top:0;z-index:20;min-height:76px;padding:11px 18px;
+  display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.9);
+  border-bottom:1px solid rgba(221,214,231,.8);backdrop-filter:blur(22px);
+  box-shadow:0 4px 24px rgba(46,31,74,.045)
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:300px}
+.brand-logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;overflow:hidden;box-shadow:0 9px 24px rgba(100,57,191,.28)}
+.brand-logo svg{display:block;width:100%;height:100%}
+.brand strong{display:block;font-size:1.05rem;letter-spacing:-.015em}
+.brand small{display:block;color:var(--muted);font-size:.69rem;margin-top:3px;font-weight:650}
+.mode-switch{display:flex;gap:5px;padding:4px;border:1px solid var(--line);border-radius:13px;background:var(--soft)}
+.mode-switch .btn{min-height:34px;padding:0 10px;border-radius:9px;font-size:.7rem}
+.mode-switch .btn.active{background:linear-gradient(135deg,#efe8ff,#f7ecff);border-color:#bca7df;color:#6530b5;box-shadow:inset 0 0 0 1px #fff}
+.top-actions{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.btn{
+  min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:11px;
+  background:#fff;color:#4d4458;font-size:.76rem;line-height:1.1;font-weight:800;box-shadow:0 2px 8px rgba(38,26,61,.025);
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;transition:.16s ease
+}
+.btn:hover:not(:disabled){transform:translateY(-1px);border-color:#cbbce1;background:#fff;box-shadow:0 6px 16px rgba(51,34,83,.08)}
+.btn.primary{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 8px 18px rgba(111,73,245,.22)}
+.btn.primary:hover:not(:disabled){box-shadow:0 11px 24px rgba(111,73,245,.3)}
+.btn.danger{color:var(--danger);background:#fff7f9;border-color:#efcbd6}
+.btn.active{border-color:#b89adb;background:#f1e9fa;color:#6530b5}
+.desktop-only{display:none}
+body.desktop .desktop-only{display:inline-flex}
+body.desktop .desktop-only.card{display:block}
+main{
+  height:calc(100vh - 76px);
+  display:grid;grid-template-columns:minmax(590px,1fr) 404px;gap:16px;padding:16px;overflow:hidden
+}
+.workspace{
+  min-width:0;height:100%;display:flex;align-items:flex-start;justify-content:center;overflow:auto;
+  padding:18px;border:1px solid rgba(219,212,228,.95);border-radius:22px;
+  background:
+    linear-gradient(90deg,rgba(156,145,173,.12) 1px,transparent 1px),
+    linear-gradient(rgba(156,145,173,.12) 1px,transparent 1px),
+    linear-gradient(180deg,#f0edf4,#e9e5ef);
+  background-size:20px 20px,20px 20px,auto;
+  box-shadow:inset 0 1px 0 #fff,0 14px 34px rgba(45,31,70,.06)
+}
+.stage{position:relative;padding:31px 0 0 31px}
+.ruler-x,.ruler-y{
+  position:absolute;background:#fbfafc;color:#736a80;border:1px solid #d8d2df;
+  font:700 9px/1 system-ui;overflow:hidden;user-select:none
+}
+.ruler-x{left:31px;top:0;height:25px;background-image:repeating-linear-gradient(90deg,#91889d 0 1px,transparent 1px 10px);background-size:10px 7px;background-repeat:repeat-x;background-position:left bottom}
+.ruler-y{left:0;top:31px;width:25px;background-image:repeating-linear-gradient(#91889d 0 1px,transparent 1px 10px);background-size:7px 10px;background-repeat:repeat-y;background-position:right top}
+.ruler-corner{position:absolute;left:0;top:0;width:25px;height:25px;border:1px solid #d8d2df;background:#fbfafc}
+.device{
+  position:relative;border:10px solid #211e26;border-radius:34px;background:#111;
+  box-shadow:0 30px 76px rgba(31,22,45,.28),0 1px 0 rgba(255,255,255,.25) inset;
+  overflow:hidden;transform-origin:top left;transition:border-radius .2s,border-width .2s
+}
+.device.wide{border-width:7px;border-radius:18px}
+.device:before{content:"";display:none;position:absolute;z-index:5;pointer-events:none;background:#161319}
+.device.notch-hole:before{display:block;top:8px;left:50%;width:10px;height:10px;transform:translateX(-50%);border-radius:50%}
+.device.notch-island:before{display:block;top:7px;left:50%;width:94px;height:28px;transform:translateX(-50%);border-radius:999px}
+.device.wide:before{display:none}
+.safe-outline{display:none;position:absolute;z-index:4;pointer-events:none;border:1px dashed rgba(111,73,245,.68);border-radius:9px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+.safe-outline.visible{display:block}
+.safe-outline span{position:absolute;left:7px;top:6px;padding:3px 6px;border-radius:6px;background:rgba(111,73,245,.88);color:#fff;font-size:9px;line-height:1;font-weight:850}
+.android-status,.android-nav{display:none;position:absolute;left:0;right:0;z-index:6;pointer-events:none;color:#fff}
+.device{--android-status:28px;--android-nav:24px;--android-status-color:#6f42c1;--android-nav-color:#000}
+.android-status{top:0;height:var(--android-status);background:var(--android-status-color);align-items:center;justify-content:space-between;padding:0 8px;font-size:9px;font-weight:800}
+.android-status .icons{display:flex;gap:5px;font-size:8px}
+.android-nav{bottom:0;height:var(--android-nav);background:var(--android-nav-color);align-items:center;justify-content:center}
+.android-nav::after{content:"";width:92px;height:4px;border-radius:999px;background:#fff;opacity:.92}
+.device.android-exact .android-status,.device.android-exact .android-nav{display:flex}
+.device.android-exact iframe{position:absolute;left:0;right:0;top:var(--android-status);height:calc(100% - var(--android-status) - var(--android-nav))}
+iframe{display:block;width:100%;height:100%;border:0;background:white}
+
+.preview-exit{display:none;position:fixed;z-index:2000;right:16px;top:16px;padding:8px 11px;border:1px solid #ffffff55;border-radius:999px;background:#21182fd9;color:#fff;font-size:.72rem;font-weight:800;box-shadow:0 8px 24px #0004}
+body.preview-mode,body.android-mode{background:#111;overflow:hidden}
+body.preview-mode header,body.android-mode header,
+body.preview-mode .side,body.android-mode .side{display:none!important}
+body.preview-mode main,body.android-mode main{display:block;height:100vh;padding:0;overflow:hidden}
+body.preview-mode .workspace,body.android-mode .workspace{
+  width:100vw;height:100vh;min-height:0;padding:0;border:0;border-radius:0;box-shadow:none;background:#111;
+  display:flex;align-items:center;justify-content:center;overflow:hidden
+}
+body.preview-mode .stage,body.android-mode .stage{padding:0}
+body.preview-mode .ruler-x,body.preview-mode .ruler-y,body.preview-mode .ruler-corner,
+body.android-mode .ruler-x,body.android-mode .ruler-y,body.android-mode .ruler-corner{display:none}
+body.preview-mode .device,body.android-mode .device{border:0;border-radius:0;box-shadow:none}
+body.preview-mode .safe-outline,body.android-mode .safe-outline{display:none!important}
+body.preview-mode .device:before,body.android-mode .device:before{display:none!important}
+body.preview-mode .preview-exit,body.android-mode .preview-exit{display:block}
+.side{
+  height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;
+  display:flex;flex-direction:column;gap:0;padding:6px;
+  border:1px solid rgba(225,219,233,.96);border-radius:20px;
+  background:rgba(255,255,255,.78);backdrop-filter:blur(16px);
+  box-shadow:0 14px 36px rgba(44,31,72,.07)
+}
+.card{
+  flex:0 0 auto;border:0;border-bottom:1px solid rgba(228,221,236,.95);border-radius:0;
+  background:transparent;padding:0;box-shadow:none
+}
+.card:last-child{border-bottom:0}
+.card h2{
+  display:flex;align-items:center;gap:8px;min-height:47px;font-size:.9rem;line-height:1.15;
+  margin:0;padding:0 10px;letter-spacing:-.01em;cursor:pointer;user-select:none
+}
+.card h2 small{margin-left:auto;color:var(--muted);font-size:.67rem;line-height:1;font-weight:750}
+.card h2::after{content:"⌄";font-size:1rem;color:#8c7b9e;transition:transform .16s ease;margin-left:2px}
+.card.collapsed h2::after{transform:rotate(-90deg)}
+.card-body{padding:0 10px var(--panel-pad)}
+.card.collapsed .card-body{display:none}
+.card p{margin:9px 0 0;color:var(--muted);font-size:.72rem;line-height:1.48;font-weight:650}
+body[data-density="compact"]{--panel-pad:8px}
+body[data-density="compact"] .card h2{min-height:41px}
+body[data-density="comfortable"]{--panel-pad:16px}
+body[data-density="comfortable"] .card h2{min-height:54px}
+body.no-animations *,body.no-animations *::before,body.no-animations *::after{transition:none!important;animation:none!important}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.fields.four{grid-template-columns:repeat(4,1fr)}
+.field{display:grid;gap:5px;align-content:start}
+.field label{font-size:.68rem;line-height:1;color:var(--muted);font-weight:750}
+.field select,.field input,.field textarea{
+  width:100%;min-height:39px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);
+  font-size:.76rem;line-height:1.2;font-weight:700;box-shadow:0 1px 0 rgba(255,255,255,.8) inset
+}
+.field select,.field input{display:flex;align-items:center}
+.field textarea{padding:10px;min-height:70px;resize:vertical;line-height:1.4}
+.selector{
+  min-height:43px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--soft);
+  display:flex;align-items:center;
+  font:700 10px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all
+}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px}
+.metric{min-height:52px;padding:7px 5px;border-radius:10px;background:#f5f1f9;text-align:center;display:grid;place-items:center;align-content:center;gap:2px}
+.metric b{display:block;font-size:.86rem;line-height:1}
+.metric small{color:var(--muted);font-size:.62rem;line-height:1;font-weight:750}
+.toolbar{display:flex;gap:5px;flex-wrap:wrap}
+.tool{
+  min-height:36px;min-width:36px;padding:0 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#513d67;
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.12;font-size:.72rem;font-weight:850
+}
+.tool.active{background:#eee5fa;border-color:#bda4dc;color:#6630b6}
+.tool.wide{flex:1}
+.geometry{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.geometry .field input{text-align:center}
+.checkline{display:flex;align-items:center;gap:7px;margin-top:8px;min-height:24px;font-size:.71rem;line-height:1.2;color:var(--muted);font-weight:700}
+.checkline input{accent-color:var(--accent)}
+.color-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.color-control{display:grid;gap:5px;font-size:.67rem;line-height:1;color:var(--muted);font-weight:750}
+.color-control input{width:100%;height:38px;padding:3px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.align-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.align-grid .tool{min-height:42px;font-size:.7rem;line-height:1.2;padding:5px 9px}
+.spacing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px}
+.space{min-height:50px;padding:7px 4px;border-radius:10px;background:#f5f1f9;text-align:center;display:grid;place-items:center;align-content:center;gap:2px}
+.space b{display:block;font-size:.82rem;line-height:1}
+.space small{font-size:.61rem;line-height:1;color:var(--muted);font-weight:750}
+.status{min-height:18px;color:var(--ok);font-size:.69rem;margin-top:6px}
+.code{width:100%;height:118px;resize:vertical;padding:9px;border:1px solid #2f2837;border-radius:9px;background:#19151f;color:#f0e9f6;font:600 10px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}
+.hint{padding:10px 11px;border-radius:10px;background:#f7f2fc;color:#684c82;font-size:.69rem;line-height:1.48;font-weight:650}
+.responsive-card{border-color:#d9cef1;background:linear-gradient(180deg,#fff,#fcfaff)}
+.responsive-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.responsive-margins{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}
+.responsive-margins input{text-align:center}
+.responsive-summary{margin-top:9px;padding:9px 10px;border-radius:10px;background:#f3eefc;color:#624c7a;font-size:.68rem;line-height:1.4}
+.responsive-card.off .responsive-body{opacity:.5}
+.responsive-card.off .responsive-body{pointer-events:none}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.settings-row{display:grid;gap:6px}
+.settings-row label{font-size:.72rem;color:var(--muted);font-weight:750}
+.settings-row select,.settings-row input[type="range"]{width:100%}
+.settings-value{font-size:.72rem;color:#5d4a72;font-weight:800}
+.settings-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.settings-note{padding:10px 11px;border-radius:10px;background:#f7f2fc;color:#684c82;font-size:.7rem;line-height:1.45}
+kbd{padding:2px 5px;border:1px solid #d7d0df;border-bottom-width:2px;border-radius:5px;background:#fff;font:700 10px system-ui}
+.source-bar{display:flex;align-items:center;gap:7px;min-width:0}
+.source-pill{max-width:310px;min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:11px;background:linear-gradient(#fff,#faf8fc);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#5f526a;font-size:.72rem;line-height:1;font-weight:750;box-shadow:0 3px 9px rgba(50,34,77,.04);display:inline-flex;align-items:center}
+.source-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:rgba(28,20,42,.55);backdrop-filter:blur(12px)}
+.source-modal[hidden]{display:none}
+.source-dialog{width:min(720px,100%);padding:22px;border:1px solid rgba(226,216,237,.95);border-radius:24px;background:
+  radial-gradient(circle at 92% 0,#f0e7ff 0,transparent 32%),
+  #fff;box-shadow:0 38px 110px rgba(22,14,35,.36)}
+.source-dialog-head{display:flex;align-items:center;gap:13px;margin-bottom:19px}
+.source-dialog-head>div{display:grid;gap:4px}
+.source-dialog-head strong{font-size:1.14rem;letter-spacing:-.02em}
+.source-dialog-head span{color:var(--muted);font-size:.74rem}
+.source-dialog-logo{width:50px;height:50px;border-radius:15px;overflow:hidden;box-shadow:0 10px 25px rgba(100,57,191,.23)}
+.source-dialog-logo svg{width:100%;height:100%;display:block}
+.source-close{margin-left:auto;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#66576f;font-size:1.3rem}
+.source-url{display:grid;gap:6px}
+.source-url>span{font-size:.68rem;color:var(--muted)}
+.source-url>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+.source-url input{min-height:40px;padding:0 11px;border:1px solid var(--line);border-radius:10px}
+.source-choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.source-choice{min-height:104px;padding:14px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(180deg,#fff,#faf8fc);text-align:left;color:#4d3f58;transition:.16s ease;box-shadow:0 4px 12px rgba(43,30,68,.03)}
+.source-choice:hover{transform:translateY(-2px);border-color:#baa4d6;background:#fff;box-shadow:0 12px 26px rgba(55,36,88,.1)}
+.source-choice b{display:block;margin-bottom:6px;color:#6030ad;font-size:.8rem}
+.source-choice span{display:block;font-size:.67rem;color:var(--muted);line-height:1.35}
+.device-kind-wrap{margin-bottom:16px;padding:12px;border:1px solid var(--line);border-radius:15px;background:#faf8fc}
+.device-kind-title{font-size:.72rem;color:#5c4a6f;font-weight:850;margin-bottom:8px}
+.device-kind-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.device-kind{
+  min-height:70px;padding:8px;border:1px solid var(--line);border-radius:11px;background:#fff;color:#5c4a6f;
+  display:grid;place-items:center;text-align:center;gap:3px;font-size:.67rem;font-weight:800
+}
+.device-kind b{font-size:1.1rem;line-height:1}
+.device-kind.active{border-color:#a98dd8;background:#f1eaff;color:#6530b5;box-shadow:inset 0 0 0 1px #fff}
+.custom-device-fields{display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.custom-device-fields.visible{display:grid}
+.native-note{margin-top:12px;padding:10px;border-radius:10px;background:#f5f2f8;color:#6f6478;font-size:.69rem;line-height:1.4}
+#textCard.disabled{opacity:.54}
+#textCard.disabled .text-controls{pointer-events:none}
+.desktop-badge{display:none;padding:3px 7px;border-radius:999px;background:#e8f6ef;color:#267557;font-size:.62rem;font-weight:900}
+body.desktop .desktop-badge{display:inline-flex}
+
+.top-actions{align-items:center}
+.fields{gap:9px}
+.geometry{gap:8px}
+.metrics,.spacing-grid{gap:7px}
+.toolbar{align-items:stretch;gap:6px}
+.toolbar .wide{min-width:0}
+.card button,.card input,.card select,.card textarea{font-family:inherit}
+#deleteEdit{min-height:42px}
+#lockEdit{min-height:42px}
+#textContent{font-size:.78rem}
+#fontFamily,#fontSize,#letterSpacing,#lineHeight,#zIndex,#posX,#posY,#sizeW,#sizeH{font-size:.76rem}
+.status{font-size:.7rem;line-height:1.35}
+
+.pro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.pro-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.layer-tree{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:11px;background:#fff;padding:5px}
+.layer-row{display:grid;grid-template-columns:minmax(0,1fr) 28px 28px;gap:4px;align-items:center;min-height:31px;padding:2px 3px;border-radius:7px}
+.layer-row:hover{background:#f7f3fb}
+.layer-row.selected{background:#eee6fb;color:#5f2ca8}
+.layer-main{min-width:0;border:0;background:transparent;text-align:left;color:inherit;font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:calc(var(--depth,0) * 12px)}
+.layer-mini{width:28px;height:26px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:.64rem}
+.audit-summary{display:flex;gap:7px;margin:7px 0}
+.audit-chip{padding:5px 8px;border-radius:999px;font-size:.66rem;font-weight:850;background:#f2eef7;color:#625570}
+.audit-chip.error{background:#ffe9ef;color:#a62f50}.audit-chip.warning{background:#fff3dd;color:#906216}
+.audit-list{max-height:270px;overflow:auto;display:grid;gap:6px}
+.audit-item{padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:.67rem;line-height:1.35}
+.audit-item.error{border-color:#efbdca;background:#fff8fa}.audit-item.warning{border-color:#eed7a6;background:#fffaf1}
+.audit-item b{display:block;margin-bottom:2px}
+.reference-overlay{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:9;pointer-events:none}
+.reference-overlay.visible{display:block}
+.multi-modal{position:fixed;inset:0;z-index:2500;background:#17131feF;display:none;grid-template-rows:auto 1fr;color:#fff}
+.multi-modal.visible{display:grid}
+.multi-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#241b31;border-bottom:1px solid #ffffff18}
+.multi-head strong{font-size:.92rem}.multi-head span{font-size:.7rem;color:#cfc4da}
+.multi-head .btn{margin-left:auto}
+.multi-grid{min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(340px,1fr));gap:12px;padding:12px}
+.multi-card{min-width:0;border:1px solid #ffffff1f;border-radius:14px;background:#2b2234;overflow:hidden;display:grid;grid-template-rows:auto 1fr}
+.multi-card-head{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;font-size:.7rem;background:#32273d}
+.multi-viewport{position:relative;min-height:360px;overflow:hidden;background:#111;display:grid;place-items:center}
+.multi-inner{position:relative;transform-origin:top left;background:#fff;box-shadow:0 12px 35px #0005}
+.multi-inner iframe{position:absolute;inset:0;border:0;background:#fff}
+.breakpoint-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin:8px 0}
+.breakpoint-active{padding:7px 9px;border-radius:9px;background:#eee8fb;color:#6134a2;font-size:.67rem;font-weight:850}
+.compare-controls{display:grid;gap:7px}
+.compare-status{font-size:.68rem;color:var(--muted);line-height:1.4}
+.layout-note{padding:8px 9px;border-radius:9px;background:#f5f1fa;color:#69567c;font-size:.67rem;line-height:1.4}
+
+.token-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.token-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.component-list,.version-list{display:grid;gap:6px;max-height:230px;overflow:auto;margin-top:8px}
+.component-item,.version-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.component-item strong,.version-item strong{font-size:.69rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.component-item small,.version-item small{display:block;color:var(--muted);font-size:.62rem;margin-top:2px}
+.mini-actions{display:flex;gap:4px}
+.mini-actions button{min-width:28px;height:28px;border:1px solid var(--line);border-radius:7px;background:#fff;font-size:.62rem;font-weight:800}
+.regression-preview{display:none;width:100%;max-height:220px;object-fit:contain;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:#eee}
+.regression-preview.visible{display:block}
+.prototype-status{padding:8px 9px;border-radius:9px;background:#f5f1fa;color:#665572;font-size:.67rem;line-height:1.4}
+
+.diff-modal,.flow-modal,.matrix-modal,.repair-modal{
+  position:fixed;inset:0;z-index:2700;background:#17131ff2;display:none;grid-template-rows:auto 1fr;color:#fff
+}
+.diff-modal.visible,.flow-modal.visible,.matrix-modal.visible,.repair-modal.visible{display:grid}
+.modal-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#241b31;border-bottom:1px solid #ffffff18}
+.modal-head strong{font-size:.94rem}.modal-head span{font-size:.7rem;color:#cfc4da}.modal-head .btn:first-of-type{margin-left:auto}
+.modal-body{min-height:0;overflow:auto;padding:14px}
+.diff-code{width:100%;min-height:60vh;white-space:pre;overflow:auto;padding:14px;border:1px solid #ffffff1f;border-radius:12px;background:#0f0d13;color:#ece6f3;font:600 11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
+.source-edit-status,.smart-status,.native-status,.consistency-status,.matrix-status{font-size:.68rem;line-height:1.42;color:var(--muted);margin-top:7px}
+.advanced-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.smart-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:8px}
+.consistency-list,.repair-list,.native-list,.matrix-list{display:grid;gap:7px;max-height:320px;overflow:auto;margin-top:8px}
+.consistency-item,.repair-item,.native-item,.matrix-item{padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:.67rem;line-height:1.4}
+.consistency-item b,.repair-item b,.native-item b,.matrix-item b{display:block;margin-bottom:3px}
+.repair-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.flow-canvas{position:relative;min-height:620px;border:1px solid #ffffff1f;border-radius:14px;background:#21192a;overflow:auto;padding:24px}
+.flow-node{position:relative;display:inline-grid;gap:5px;vertical-align:top;width:230px;min-height:96px;margin:12px;padding:12px;border:1px solid #ffffff2b;border-radius:12px;background:#30263a;color:#fff}
+.flow-node strong{font-size:.75rem}.flow-node small{font-size:.64rem;color:#c9bfd2;word-break:break-all}.flow-node button{margin-top:auto}
+.flow-link{padding:8px 10px;margin:6px 0;border-radius:9px;background:#ffffff0d;font-size:.67rem;color:#ded5e6}
+.multi-card.editing{border-color:#b57cff;box-shadow:0 0 0 2px #b57cff66}
+.multi-edit-btn{min-height:27px;padding:0 8px;border:1px solid #ffffff2d;border-radius:7px;background:#ffffff0d;color:#fff;font-size:.62rem;font-weight:800}
+.native-item.selected{border-color:#a98dd8;background:#f1eaff}
+.native-item button{margin-top:6px}
+.matrix-item.fail{border-color:#efbdca;background:#fff8fa}.matrix-item.pass{border-color:#bfe7d5;background:#f7fffb}
+.source-direct-row{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:end}
+@media(max-width:1100px){
+  body{overflow:auto}
+  main{height:auto;min-height:calc(100vh - 76px);grid-template-columns:1fr;overflow:visible}
+  .workspace{height:auto;min-height:620px}
+  .side{height:auto;max-height:none}
+}
+@media(max-width:760px){
+  .side{grid-template-columns:1fr}
+  header{align-items:flex-start;flex-wrap:wrap}
+  .top-actions{margin-left:0;width:100%}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-logo"><svg viewBox="0 0 64 64" aria-hidden="true">
+  <defs><linearGradient id="aisg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#6D4AFF"/><stop offset=".55" stop-color="#8F4BFF"/><stop offset="1" stop-color="#D85CFF"/></linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#aisg)"/>
+  <path d="M15 21h34M15 32h34M15 43h34M21 15v34M32 15v34M43 15v34" stroke="#fff" stroke-opacity=".18" stroke-width="1.6"/>
+  <rect x="18" y="18" width="28" height="28" rx="7" fill="#fff" fill-opacity=".13" stroke="#fff" stroke-opacity=".32"/>
+  <path d="M23.3 22.5l15.2 7.1-6.2 2.5 4.9 9.7-4.1 2.1-5-9.9-4.8 5V22.5z" fill="#fff" stroke="#fff" stroke-width=".9" stroke-linejoin="round"/>
+  <circle cx="45" cy="18.8" r="3.1" fill="#FFF4C2"/><path d="M45 13.7v2.2M45 21.7v2.2M39.9 18.8h2.2M47.9 18.8h2.2" stroke="#FFF4C2" stroke-width="1.7" stroke-linecap="round"/>
+</svg></div>
+    <div>
+      <strong>App Interface Studio <span class="desktop-badge">Windows</span></strong>
+      <small>Éditeur visuel universel pour applications web et interfaces HTML</small>
+    </div>
+  </div>
+
+  <div class="source-bar">
+    <span class="source-pill" id="sourceName">Aucune application ouverte</span>
+    <button class="btn primary desktop-only" id="changeSourceBtn">Ouvrir une application</button>
+  </div>
+
+  <div class="mode-switch" id="modeSwitch">
+    <button class="btn active" data-preview-mode="edit">Édition</button>
+    <button class="btn" data-preview-mode="preview">Aperçu plein écran</button>
+    <button class="btn" data-preview-mode="android">Android exact</button>
+  </div>
+
+  <div class="top-actions">
+    <button class="btn desktop-only" id="openProjectBtn">Ouvrir</button>
+    <button class="btn desktop-only" id="saveProjectBtn">Enregistrer</button>
+    <button class="btn primary desktop-only" id="exportChatGPTBtn">Exporter pour ChatGPT</button>
+    <button class="btn desktop-only" id="openAsAppBtn">Ouvrir comme appli</button>
+    <button class="btn" id="settingsBtn">⚙ Paramètres</button>
+    <button class="btn" id="reloadBtn">Recharger</button>
+  </div>
+</header>
+
+<div class="source-modal" id="sourceModal" hidden>
+  <div class="source-dialog">
+    <div class="source-dialog-head">
+      <div class="source-dialog-logo"><svg viewBox="0 0 64 64" aria-hidden="true">
+  <defs><linearGradient id="aisg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#6D4AFF"/><stop offset=".55" stop-color="#8F4BFF"/><stop offset="1" stop-color="#D85CFF"/></linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#aisg)"/>
+  <path d="M15 21h34M15 32h34M15 43h34M21 15v34M32 15v34M43 15v34" stroke="#fff" stroke-opacity=".18" stroke-width="1.6"/>
+  <rect x="18" y="18" width="28" height="28" rx="7" fill="#fff" fill-opacity=".13" stroke="#fff" stroke-opacity=".32"/>
+  <path d="M23.3 22.5l15.2 7.1-6.2 2.5 4.9 9.7-4.1 2.1-5-9.9-4.8 5V22.5z" fill="#fff" stroke="#fff" stroke-width=".9" stroke-linejoin="round"/>
+  <circle cx="45" cy="18.8" r="3.1" fill="#FFF4C2"/><path d="M45 13.7v2.2M45 21.7v2.2M39.9 18.8h2.2M47.9 18.8h2.2" stroke="#FFF4C2" stroke-width="1.7" stroke-linecap="round"/>
+</svg></div>
+      <div>
+        <strong>Ouvrir une application</strong>
+        <span>Choisis la source à modifier visuellement.</span>
+      </div>
+      <button class="source-close" id="sourceCloseBtn" type="button">×</button>
+    </div>
+    <div class="device-kind-wrap">
+      <div class="device-kind-title">1. Choisis d’abord le type d’écran à reproduire</div>
+      <div class="device-kind-grid" id="deviceKindGrid">
+        <button class="device-kind active" type="button" data-device-kind="smartphone"><b>▯</b><span>Smartphone</span></button>
+        <button class="device-kind" type="button" data-device-kind="tablet"><b>▭</b><span>Tablette</span></button>
+        <button class="device-kind" type="button" data-device-kind="tv"><b>▰</b><span>Télé / TV</span></button>
+        <button class="device-kind" type="button" data-device-kind="desktop"><b>▱</b><span>Bureau</span></button>
+        <button class="device-kind" type="button" data-device-kind="custom"><b>⌗</b><span>Autre</span></button>
+      </div>
+      <div class="custom-device-fields" id="customDeviceFields">
+        <label class="field"><span>Largeur logique</span><input id="customDeviceWidth" type="number" min="240" value="412"></label>
+        <label class="field"><span>Hauteur logique</span><input id="customDeviceHeight" type="number" min="240" value="915"></label>
+      </div>
+    </div>
+    <label class="source-url">
+      <span>URL d’une application web / PWA</span>
+      <div><input id="sourceUrlInput" type="text" placeholder="https://mon-app.example"><button class="btn primary" id="openUrlBtn">Ouvrir</button></div>
+    </label>
+    <div class="source-choice-grid">
+      <button class="source-choice" id="openFolderBtn"><b>📁 Dossier local</b><span>PWA/HTML ou projet Android natif XML / Compose</span></button>
+      <button class="source-choice" id="openHtmlBtn"><b>📄 Fichier HTML</b><span>Choisir directement la page principale</span></button>
+      <button class="source-choice" id="openDemoBtn"><b>✦ Démo intégrée</b><span>Tester avec Radio intelligente</span></button>
+    </div>
+    <div class="native-note"><b>Applications natives :</b> un dossier Android avec sources est maintenant détecté et prévisualisé en mode XML/Compose. Une APK/EXE fermée sans source reste non éditable directement.</div>
+    <div class="status" id="sourceStatus"></div>
+  </div>
+</div>
+
+<div class="multi-modal" id="multiPreviewModal">
+  <div class="multi-head">
+    <div><strong>Comparaison multi-écrans</strong><br><span>Le même projet est rendu simultanément avec ses breakpoints sur plusieurs viewports.</span></div>
+    <button class="btn" id="multiSyncBtn">Resynchroniser</button>
+    <button class="btn" id="multiCloseBtn">Fermer</button>
+  </div>
+  <div class="multi-grid" id="multiPreviewGrid"></div>
+</div>
+
+
+<div class="diff-modal" id="sourceDiffModal">
+  <div class="modal-head">
+    <div><strong>Diff source direct</strong><br><span id="sourceDiffFile">Aucun diff préparé.</span></div>
+    <button class="btn primary" id="applyDirectDiffBtn">Appliquer au fichier</button>
+    <button class="btn" id="closeDirectDiffBtn">Fermer</button>
+  </div>
+  <div class="modal-body"><pre class="diff-code" id="sourceDiffCode"></pre></div>
+</div>
+
+<div class="flow-modal" id="flowModal">
+  <div class="modal-head">
+    <div><strong>Flow de navigation</strong><br><span>Pages, composants et liens de prototype.</span></div>
+    <button class="btn" id="refreshFlowBtn">Actualiser</button>
+    <button class="btn" id="closeFlowBtn">Fermer</button>
+  </div>
+  <div class="modal-body"><div class="flow-canvas" id="flowCanvas"></div></div>
+</div>
+
+<div class="matrix-modal" id="matrixModal">
+  <div class="modal-head">
+    <div><strong>Matrice automatique de tests</strong><br><span>Téléphones, tablette, bureau, grandes polices et clavier.</span></div>
+    <button class="btn primary" id="runMatrixBtn">Relancer</button>
+    <button class="btn" id="closeMatrixBtn">Fermer</button>
+  </div>
+  <div class="modal-body">
+    <div class="matrix-status" id="matrixStatus" style="color:#ded5e6">Aucun test lancé.</div>
+    <div class="matrix-list" id="matrixList"></div>
+  </div>
+</div>
+
+<div class="repair-modal" id="repairModal">
+  <div class="modal-head">
+    <div><strong>Réparer l’interface</strong><br><span>Prévisualise chaque correction avant de l’appliquer.</span></div>
+    <button class="btn" id="clearRepairPreviewBtn">Annuler l’aperçu</button>
+    <button class="btn" id="closeRepairBtn">Fermer</button>
+  </div>
+  <div class="modal-body"><div class="repair-list" id="repairList"></div></div>
+</div>
+
+<div class="source-modal" id="settingsModal" hidden>
+  <div class="source-dialog">
+    <div class="source-dialog-head">
+      <div>
+        <strong>Paramètres de l’application</strong>
+        <span>Personnalise l’éditeur sans modifier l’application chargée.</span>
+      </div>
+      <button class="source-close" id="settingsCloseBtn" type="button">×</button>
+    </div>
+    <div class="settings-grid">
+      <div class="settings-row">
+        <label for="uiFontScale">Taille du texte de l’interface</label>
+        <input id="uiFontScale" type="range" min="85" max="130" step="5" value="100">
+        <div class="settings-value"><span id="uiFontScaleValue">100</span> %</div>
+      </div>
+      <div class="settings-row">
+        <label for="uiDensity">Densité de l’interface</label>
+        <select id="uiDensity">
+          <option value="compact">Compacte</option>
+          <option value="normal" selected>Normale</option>
+          <option value="comfortable">Confortable</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label>Comportement</label>
+        <label class="checkline" style="margin-top:0"><input id="uiAnimations" type="checkbox" checked> Animations de l’interface</label>
+        <label class="checkline" style="margin-top:0"><input id="defaultResponsivePref" type="checkbox" checked> Nouveaux objets adaptatifs par défaut</label>
+      </div>
+      <div class="settings-row">
+        <label>Panneaux latéraux</label>
+        <label class="checkline" style="margin-top:0"><input id="rememberPanels" type="checkbox"> Mémoriser les panneaux ouverts</label>
+        <div class="settings-note">Par défaut, toutes les sections de droite sont repliées au lancement pour garder une colonne claire.</div>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="btn" id="resetUiSettings">Réinitialiser</button>
+      <button class="btn primary" id="settingsDoneBtn">Terminé</button>
+    </div>
+  </div>
+</div>
+
+<div class="preview-exit" id="previewExit">Échap · retour à l’édition</div>
+
+<main>
+  <section class="workspace">
+    <div class="stage" id="stage">
+      <div class="ruler-corner"></div>
+      <div class="ruler-x" id="rulerX"></div>
+      <div class="ruler-y" id="rulerY"></div>
+      <div class="device" id="device">
+        <div class="android-status" id="androidStatus"><span id="androidClock">12:00</span><span class="icons">● ◒ ▰</span></div>
+        <iframe id="appFrame" title="Aperçu de l'application" src="about:blank"></iframe>
+        <div class="android-nav" id="androidNav"></div>
+        <div class="safe-outline" id="safeOutline"><span>zone sûre</span></div>
+        <img class="reference-overlay" id="referenceOverlay" alt="Capture de référence">
+      </div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="card">
+      <h2>Écran <small>repères</small></h2>
+      <div class="fields">
+        <div class="field"><label>Format</label><select id="devicePreset">
+          <option value="412x915">Galaxy S23 Ultra · 412 × 915</option>
+          <option value="384x854">Android · 384 × 854</option>
+          <option value="390x844">390 × 844</option>
+          <option value="360x800">Téléphone compact · 360 × 800</option>
+          <option value="768x1024">Tablette · 768 × 1024</option>
+          <option value="1280x720">Télé / TV HD · 1280 × 720</option>
+          <option value="1920x1080">Télé / TV Full HD · 1920 × 1080</option>
+          <option value="1024x768">Bureau compact · 1024 × 768</option>
+          <option value="1366x768">Bureau · 1366 × 768</option>
+          <option value="1440x900">Bureau large · 1440 × 900</option>
+          <option value="custom">Autre / personnalisé</option>
+        </select></div>
+        <div class="field" id="customScreenSize" style="display:none"><label>Dimensions personnalisées</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px"><input id="screenCustomW" type="number" min="240" value="412"><input id="screenCustomH" type="number" min="240" value="915"></div></div>
+        <div class="field"><label>Zoom PC</label><select id="zoom">
+          <option value="1">100 %</option><option value=".9">90 %</option><option value=".8">80 %</option><option value=".7">70 %</option>
+        </select></div>
+        <div class="field"><label>Accrochage</label><select id="grid">
+          <option value="1">Libre · 1 px</option><option value="4">Grille · 4 px</option><option value="8">Grille · 8 px</option>
+        </select></div>
+        <div class="field"><label>Pas boutons</label><select id="step">
+          <option value="1">1 px</option><option value="5">5 px</option><option value="10">10 px</option>
+        </select></div>
+        <div class="field" style="grid-column:1/-1"><label>Encoche / zones sûres</label><select id="safeProfile">
+          <option value="auto">Automatique selon l’écran</option>
+          <option value="none">Aucune</option>
+          <option value="android-hole">Android · trou caméra</option>
+          <option value="iphone-island">iPhone · Dynamic Island</option>
+        </select></div>
+      </div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn wide" id="rotateDeviceBtn">↻ Portrait / paysage</button>
+        <button class="btn wide" id="multiPreviewBtn">▦ Comparer plusieurs écrans</button>
+      </div>
+      <p>Glisse les objets. Les guides roses apparaissent pour le centre et les alignements proches. Le contour violet représente la zone sûre simulée.</p>
+    </section>
+
+    <section class="card">
+      <h2>Sélection <small>ajustement fin</small></h2>
+      <div class="selector" id="selector">Clique un élément dans l’aperçu.</div>
+      <div class="metrics">
+        <div class="metric"><b id="mx">—</b><small>X</small></div>
+        <div class="metric"><b id="my">—</b><small>Y</small></div>
+        <div class="metric"><b id="mw">—</b><small>Largeur</small></div>
+        <div class="metric"><b id="mh">—</b><small>Hauteur</small></div>
+      </div>
+      <div class="geometry" style="margin-top:8px">
+        <div class="field"><label>X aperçu</label><input id="posX" type="number" title="Diagnostic. En mode adaptatif, utilise les ancrages et marges."></div>
+        <div class="field"><label>Y aperçu</label><input id="posY" type="number" title="Diagnostic. En mode adaptatif, utilise les ancrages et marges."></div>
+        <div class="field"><label>Largeur</label><input id="sizeW" type="number" min="1"></div>
+        <div class="field"><label>Hauteur</label><input id="sizeH" type="number" min="1"></div>
+      </div>
+      <label class="checkline"><input id="keepRatio" type="checkbox"> Conserver les proportions</label>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="tool" id="undoEdit" disabled>↶</button>
+        <button class="tool" id="redoEdit" disabled>↷</button>
+        <button class="tool wide" id="lockEdit">🔓 Verrouiller</button>
+        <button class="tool wide danger" id="deleteEdit">Masquer (garde l’espace)</button>
+      </div>
+      <div class="hint" style="margin-top:8px"><kbd>Maj</kbd> + clic ajoute/retire des objets à la sélection. <kbd>←↑↓→</kbd> déplace relativement aux ancrages · <kbd>Maj</kbd> + flèche redimensionne · <kbd>Suppr</kbd> masque · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd>. Les X/Y sont seulement des coordonnées d’aperçu lorsque l’adaptatif est actif.</div>
+    </section>
+
+    <section class="card" id="textCard">
+      <h2>Texte <small>type Word</small></h2>
+      <div class="text-controls">
+        <div class="field"><label>Contenu</label><textarea id="textContent" placeholder="Sélectionne un texte dans l’aperçu."></textarea></div>
+        <div class="fields" style="margin-top:7px">
+          <div class="field"><label>Police</label><select id="fontFamily">
+            <option value="'Segoe UI', sans-serif">Segoe UI</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Calibri, sans-serif">Calibri</option>
+            <option value="Verdana, sans-serif">Verdana</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="'Courier New', monospace">Courier New</option>
+          </select></div>
+          <div class="field"><label>Taille</label><input id="fontSize" type="number" min="4" max="120" step=".5"></div>
+        </div>
+        <div class="toolbar" style="margin-top:7px">
+          <button class="tool" id="boldBtn"><b>G</b></button>
+          <button class="tool" id="italicBtn"><i>I</i></button>
+          <button class="tool" id="underlineBtn"><u>S</u></button>
+          <button class="tool" data-text-align="left">↤</button>
+          <button class="tool" data-text-align="center">↔</button>
+          <button class="tool" data-text-align="right">↦</button>
+        </div>
+        <div class="fields" style="margin-top:7px">
+          <div class="field"><label>Interlettrage px</label><input id="letterSpacing" type="number" step=".1"></div>
+          <div class="field"><label>Interligne</label><input id="lineHeight" type="number" min=".5" max="4" step=".05"></div>
+        </div>
+      </div>
+      <p id="textHint">Clique directement un libellé ou une icône textuelle pour la modifier.</p>
+    </section>
+
+    <section class="card">
+      <h2>Apparence <small>forme / icône</small></h2>
+      <div class="color-grid">
+        <label class="color-control">Texte / icône<input id="colorText" type="color" value="#000000"></label>
+        <label class="color-control">Fond<input id="colorBg" type="color" value="#ffffff"></label>
+        <label class="color-control">Bordure<input id="colorBorder" type="color" value="#dddddd"></label>
+      </div>
+      <div class="fields" style="margin-top:8px">
+        <div class="field"><label>Plan (z-index)</label><input id="zIndex" type="number" value="0"></div>
+        <div class="field"><label>Ajustement rapide</label><div class="toolbar">
+          <button class="tool" id="sendBack">Plan −</button><button class="tool" id="bringFront">Plan +</button>
+        </div></div>
+      </div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="tool wide" data-font="-1">Icône / texte −</button>
+        <button class="tool wide" data-font="1">Icône / texte +</button>
+      </div>
+      <p>Pour un SVG ou une icône indépendante, clique directement dessus : largeur/hauteur agissent alors sur l’icône elle-même.</p>
+    </section>
+
+
+
+    <section class="card">
+      <h2>Inspecteur avancé <small>CSS structurel</small></h2>
+      <div class="advanced-grid">
+        <div class="field"><label>Padding</label><input id="advPadding" type="text" placeholder="12px"></div>
+        <div class="field"><label>Margin</label><input id="advMargin" type="text" placeholder="0 8px"></div>
+        <div class="field"><label>Rayon</label><input id="advRadius" type="text" placeholder="12px"></div>
+        <div class="field"><label>Ombre</label><input id="advShadow" type="text" placeholder="0 8px 24px #0002"></div>
+        <div class="field"><label>Opacité</label><input id="advOpacity" type="text" placeholder="1"></div>
+        <div class="field"><label>Blur / filtre</label><input id="advFilter" type="text" placeholder="blur(8px)"></div>
+        <div class="field"><label>Aspect ratio</label><input id="advAspect" type="text" placeholder="16 / 9"></div>
+        <div class="field"><label>Overflow</label><select id="advOverflow"><option value="">Original</option><option value="visible">visible</option><option value="hidden">hidden</option><option value="auto">auto</option><option value="scroll">scroll</option></select></div>
+        <div class="field"><label>Min largeur</label><input id="advMinWidth" type="text" placeholder="0"></div>
+        <div class="field"><label>Max largeur</label><input id="advMaxWidth" type="text" placeholder="none"></div>
+        <div class="field"><label>Position</label><select id="advPosition"><option value="">Originale</option><option value="relative">relative</option><option value="absolute">absolute</option><option value="fixed">fixed</option><option value="sticky">sticky</option></select></div>
+        <div class="field"><label>Object-fit</label><select id="advObjectFit"><option value="">Original</option><option value="cover">cover</option><option value="contain">contain</option><option value="fill">fill</option><option value="scale-down">scale-down</option></select></div>
+      </div>
+      <button class="btn primary" id="applyAdvancedBtn" style="width:100%;margin-top:8px">Appliquer à la sélection</button>
+    </section>
+
+    <section class="card responsive-card off" id="responsiveCard">
+      <h2>Adaptatif <small>multi-écrans</small></h2>
+      <label class="checkline" style="margin-top:0"><input id="responsiveEnabled" type="checkbox"> Utiliser des contraintes relatives (recommandé)</label>
+      <div class="responsive-body">
+        <div class="breakpoint-row">
+          <div class="field"><label>Modifier les règles pour</label><select id="breakpointEdit">
+            <option value="base">Base · tous les écrans</option>
+            <option value="phone">Téléphone · &lt; 600 px</option>
+            <option value="tablet">Tablette · 600–1023 px</option>
+            <option value="desktop">Grand écran · ≥ 1024 px</option>
+          </select></div>
+          <div class="breakpoint-active" id="breakpointActive">actif : téléphone</div>
+        </div>
+        <div class="responsive-grid" style="margin-top:9px">
+          <div class="field"><label>Ancrage horizontal</label><select id="hAnchor">
+            <option value="free">Libre</option><option value="left">Gauche</option><option value="center">Centré</option><option value="right">Droite</option><option value="stretch">Gauche + droite</option>
+          </select></div>
+          <div class="field"><label>Ancrage vertical</label><select id="vAnchor">
+            <option value="free">Libre</option><option value="top">Haut</option><option value="center">Centré</option><option value="bottom">Bas</option><option value="stretch">Haut + bas</option>
+          </select></div>
+          <div class="field"><label>Largeur</label><select id="widthMode">
+            <option value="auto">Naturelle</option><option value="fixed">Fixe</option><option value="percent">Pourcentage</option><option value="fill">Remplir entre marges</option>
+          </select></div>
+          <div class="field"><label>Hauteur</label><select id="heightMode">
+            <option value="auto">Naturelle</option><option value="fixed">Fixe</option><option value="percent">Pourcentage</option><option value="fill">Remplir entre marges</option>
+          </select></div>
+        </div>
+        <div class="responsive-margins">
+          <div class="field"><label>Gauche</label><input id="marginLeft" type="number" step="1"></div>
+          <div class="field"><label>Haut</label><input id="marginTop" type="number" step="1"></div>
+          <div class="field"><label>Droite</label><input id="marginRight" type="number" step="1"></div>
+          <div class="field"><label>Bas</label><input id="marginBottom" type="number" step="1"></div>
+        </div>
+        <div class="fields" style="margin-top:9px">
+          <div class="field"><label>Largeur %</label><input id="widthPercent" type="number" min="1" max="100" step=".1"></div>
+          <div class="field"><label>Hauteur %</label><input id="heightPercent" type="number" min="1" max="100" step=".1"></div>
+        </div>
+        <label class="checkline"><input id="respectSafeArea" type="checkbox" checked> Respecter automatiquement les encoches et barres système</label>
+        <button class="btn" id="captureResponsive" style="width:100%;margin-top:8px">Reprendre les marges depuis la position actuelle</button>
+        <div class="smart-actions">
+          <button class="btn" id="suggestConstraintsBtn">Déduire les contraintes</button>
+          <button class="btn primary" id="applyConstraintsBtn">Appliquer les contraintes intelligentes</button>
+        </div>
+        <div class="responsive-summary" id="responsiveSummary">Sélectionne un élément puis active les contraintes.</div>
+      </div>
+    </section>
+
+
+
+    <section class="card desktop-only" id="nativeAndroidCard">
+      <h2>Android natif <small>XML / Compose</small></h2>
+      <div class="native-status" id="nativeStatus">Ouvre un dossier Android pour activer ce mode.</div>
+      <div class="native-list" id="nativeList"></div>
+      <div class="fields" style="margin-top:8px">
+        <div class="field"><label>Propriété</label><select id="nativeProperty">
+          <option value="text">Texte</option><option value="textSize">Taille texte</option><option value="padding">Padding</option><option value="margin">Margin</option><option value="width">Largeur</option><option value="height">Hauteur</option><option value="background">Fond</option><option value="gravity">Gravity</option>
+        </select></div>
+        <div class="field"><label>Valeur</label><input id="nativeValue" type="text" placeholder="16dp ou Nouveau texte"></div>
+      </div>
+      <button class="btn primary" id="prepareNativeEditBtn" style="width:100%;margin-top:8px">Préparer le diff Android</button>
+    </section>
+
+    <section class="card">
+      <h2>Calques <small>arbre des éléments</small></h2>
+      <div class="layer-tree" id="layerTree"><div class="hint">Chargement de l’arbre…</div></div>
+      <div class="toolbar" style="margin-top:7px">
+        <button class="btn wide" id="refreshLayersBtn">Actualiser</button>
+      </div>
+      <p>Clique un calque pour sélectionner précisément un élément imbriqué. Œil = masquer, cadenas = verrouiller.</p>
+    </section>
+
+    <section class="card">
+      <h2>Flex / Grid <small>parent intelligent</small></h2>
+      <div class="layout-note" id="layoutParentName">Sélectionne un objet pour inspecter son conteneur parent.</div>
+      <div class="fields" style="margin-top:8px">
+        <div class="field"><label>Disposition</label><select id="layoutDisplay">
+          <option value="flex">Flex</option><option value="grid">Grid</option><option value="block">Bloc</option>
+        </select></div>
+        <div class="field"><label>Gap</label><input id="layoutGap" type="text" placeholder="12px"></div>
+        <div class="field"><label>Direction Flex</label><select id="layoutFlexDirection">
+          <option value="row">Ligne</option><option value="column">Colonne</option><option value="row-reverse">Ligne inversée</option><option value="column-reverse">Colonne inversée</option>
+        </select></div>
+        <div class="field"><label>Justification</label><select id="layoutJustify">
+          <option value="flex-start">Début</option><option value="center">Centre</option><option value="flex-end">Fin</option><option value="space-between">Espace entre</option><option value="space-around">Autour</option><option value="space-evenly">Régulier</option>
+        </select></div>
+        <div class="field"><label>Alignement</label><select id="layoutAlign">
+          <option value="stretch">Étirer</option><option value="flex-start">Début</option><option value="center">Centre</option><option value="flex-end">Fin</option>
+        </select></div>
+        <div class="field"><label>Colonnes Grid</label><input id="layoutColumns" type="text" placeholder="repeat(2, 1fr)"></div>
+      </div>
+      <button class="btn primary" id="applyParentLayout" style="width:100%;margin-top:8px">Appliquer au conteneur parent</button>
+      <div class="smart-actions">
+        <button class="btn" id="suggestAutoLayoutBtn">Analyser l’auto-layout</button>
+        <button class="btn primary" id="applyAutoLayoutBtn">Convertir automatiquement</button>
+      </div>
+      <div class="smart-status" id="autoLayoutStatus">Sélectionne plusieurs objets d’un même conteneur pour déduire ligne, colonne ou grille.</div>
+    </section>
+
+    <section class="card">
+      <h2>Distribuer <small>sélection multiple</small></h2>
+      <div class="pro-grid three">
+        <button class="tool" data-distribute="align-left">← bords</button>
+        <button class="tool" data-distribute="align-center-x">↔ centres</button>
+        <button class="tool" data-distribute="align-right">bords →</button>
+        <button class="tool" data-distribute="align-top">↑ hauts</button>
+        <button class="tool" data-distribute="align-center-y">↕ milieux</button>
+        <button class="tool" data-distribute="align-bottom">bas ↓</button>
+        <button class="tool" data-distribute="same-width">Même largeur</button>
+        <button class="tool" data-distribute="same-height">Même hauteur</button>
+        <button class="tool" data-distribute="distribute-x">Espacer ↔</button>
+        <button class="tool" data-distribute="distribute-y">Espacer ↕</button>
+      </div>
+      <div class="fields" style="margin-top:8px">
+        <div class="field"><label>Écart exact</label><input id="distributeGap" type="number" value="12" min="0"></div>
+        <div class="toolbar" style="align-self:end"><button class="tool" data-distribute="gap-x">12 px ↔</button><button class="tool" data-distribute="gap-y">12 px ↕</button></div>
+      </div>
+      <p>Sélectionne plusieurs objets avec <kbd>Maj</kbd> + clic, puis aligne ou répartis-les.</p>
+    </section>
+
+    <section class="card">
+      <h2>Alignement <small>1 clic</small></h2>
+      <div class="align-grid">
+        <button class="tool" data-align="screen-x">Centrer ↔ écran</button>
+        <button class="tool" data-align="screen-y">Centrer ↕ écran</button>
+        <button class="tool" data-align="parent-x">Centrer ↔ dans parent</button>
+        <button class="tool" data-align="parent-y">Centrer ↕ dans parent</button>
+        <button class="tool" data-align="parent-both" style="grid-column:1/-1">Centrer parfaitement dans la forme / zone parente</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Espacements <small>mesure</small></h2>
+      <button class="btn" id="measureBtn" style="width:100%">Mesurer autour de la sélection</button>
+      <div class="spacing-grid">
+        <div class="space"><b id="spaceL">—</b><small>gauche</small></div>
+        <div class="space"><b id="spaceT">—</b><small>haut</small></div>
+        <div class="space"><b id="spaceR">—</b><small>droite</small></div>
+        <div class="space"><b id="spaceB">—</b><small>bas</small></div>
+      </div>
+      <p id="spacingDetail">Les valeurs indiquent l’élément visible le plus proche. Maintiens <kbd>Alt</kbd> et survole un autre objet pour mesurer instantanément bord à bord.</p>
+    </section>
+
+
+
+    <section class="card">
+      <h2>Design system <small>tokens globaux</small></h2>
+      <div class="token-grid">
+        <div class="field"><label>Unité d’espacement</label><input id="tokenSpacing" type="number" min="1" value="8"></div>
+        <div class="field"><label>Rayon des cartes</label><input id="tokenRadius" type="number" min="0" value="12"></div>
+        <div class="field"><label>Titre</label><input id="tokenTitle" type="number" min="8" value="20"></div>
+        <div class="field"><label>Couleur principale</label><input id="tokenPrimary" type="color" value="#6f49f5"></div>
+        <div class="field"><label>Surface</label><input id="tokenSurface" type="color" value="#ffffff"></div>
+      </div>
+      <button class="btn primary" id="applyTokensBtn" style="width:100%;margin-top:8px">Appliquer les tokens globaux</button>
+      <div class="token-actions">
+        <button class="tool" data-token-apply="primary">Couleur</button>
+        <button class="tool" data-token-apply="surface">Surface</button>
+        <button class="tool" data-token-apply="title">Titre</button>
+        <button class="tool" data-token-apply="radius">Rayon</button>
+        <button class="tool" data-token-apply="spacing">Gap</button>
+        <button class="tool" id="snapToTokenGrid">Grille = unité</button>
+      </div>
+      <p>Les valeurs deviennent des variables CSS réutilisables. La grille d’espacement peut suivre directement l’unité choisie.</p>
+    </section>
+
+    <section class="card">
+      <h2>Composants <small>réutilisables + variantes</small></h2>
+      <div class="fields">
+        <div class="field"><label>Nom du composant</label><input id="componentName" type="text" placeholder="Bouton principal"></div>
+        <div class="field"><label>Variante</label><input id="variantName" type="text" placeholder="Désactivé"></div>
+      </div>
+      <div class="toolbar" style="margin-top:8px">
+        <button class="btn wide" id="createComponentBtn">Créer depuis sélection</button>
+        <button class="btn wide" id="linkComponentBtn">Lier comme instance</button>
+        <button class="btn wide" id="updateComponentBtn">Mettre à jour toutes</button>
+      </div>
+      <div class="toolbar" style="margin-top:6px">
+        <button class="btn wide" id="saveVariantBtn">Enregistrer variante</button>
+        <button class="btn wide" id="applyVariantBtn">Appliquer variante</button>
+        <button class="btn wide" id="applyVariantAllBtn">Variante à toutes</button>
+      </div>
+      <div class="component-list" id="componentList"><div class="hint">Aucun composant.</div></div>
+    </section>
+
+    <section class="card">
+      <h2>États et animations <small>prototype interactif</small></h2>
+      <div class="fields">
+        <div class="field"><label>État à simuler</label><select id="interactiveState">
+          <option value="normal">Normal</option><option value="hover">Survol</option><option value="active">Appuyé</option><option value="focus">Focus</option><option value="disabled">Désactivé</option>
+        </select></div>
+        <div class="field"><label>Propriété animée</label><select id="animationProperty">
+          <option value="all">Tout</option><option value="transform">Transform</option><option value="opacity">Opacité</option><option value="background-color">Fond</option><option value="color">Texte</option>
+        </select></div>
+        <div class="field"><label>Durée ms</label><input id="animationDuration" type="number" min="0" value="180"></div>
+        <div class="field"><label>Easing</label><select id="animationEasing">
+          <option value="ease">ease</option><option value="ease-in-out">ease-in-out</option><option value="linear">linear</option><option value="cubic-bezier(.2,.8,.2,1)">fluide</option>
+        </select></div>
+      </div>
+      <button class="btn" id="applyAnimationBtn" style="width:100%;margin-top:8px">Appliquer animation</button>
+      <div class="field" style="margin-top:9px"><label>Cible du clic · sélecteur</label><input id="prototypeTarget" type="text" placeholder="#settings ou .page-player"></div>
+      <button class="btn" id="setPrototypeBtn" style="width:100%;margin-top:7px">Créer le lien de prototype</button>
+      <button class="btn" id="openFlowBtn" style="width:100%;margin-top:7px">Ouvrir le flow de navigation</button>
+      <div class="prototype-status" id="prototypeStatus" style="margin-top:7px">En mode Aperçu, cliquer l’objet déclenchera sa cible.</div>
+    </section>
+
+
+    <section class="card">
+      <h2>Tests de contenu <small>cas extrêmes</small></h2>
+      <div class="pro-grid">
+        <button class="tool" data-stress="long-text">Textes très longs</button>
+        <button class="tool" data-stress="no-images">Images absentes</button>
+        <button class="tool" data-stress="empty">Contenu vide</button>
+        <button class="tool" data-stress="many-items">Beaucoup d’éléments</button>
+      </div>
+      <button class="btn" id="resetStressBtn" style="width:100%;margin-top:7px">Revenir au contenu normal</button>
+    </section>
+
+    <section class="card">
+      <h2>Historique visuel <small>points de contrôle</small></h2>
+      <div class="field"><label>Nom de la version</label><input id="versionName" type="text" placeholder="Avant refonte du lecteur"></div>
+      <button class="btn primary" id="saveNamedVersionBtn" style="width:100%;margin-top:7px">Créer un point de contrôle</button>
+      <div class="version-list" id="versionList"><div class="hint">Aucun point de contrôle.</div></div>
+    </section>
+
+    <section class="card desktop-only">
+      <h2>Captures et régression <small>comparaison visuelle</small></h2>
+      <div class="toolbar">
+        <button class="btn wide" id="batchCaptureBtn">Capturer tous les formats</button>
+        <button class="btn wide" id="saveBaselineBtn">Définir référence</button>
+      </div>
+      <button class="btn" id="compareRegressionBtn" style="width:100%;margin-top:7px">Comparer à la référence</button>
+      <div class="compare-status" id="regressionStatus">Aucune référence visuelle.</div>
+      <img class="regression-preview" id="regressionDiff" alt="Différence visuelle">
+    </section>
+
+    <section class="card desktop-only">
+      <h2>GitHub <small>branche et Pull Request</small></h2>
+      <div class="field"><label>Branche</label><input id="gitBranch" type="text" value="app-interface-studio/ui-update"></div>
+      <div class="field" style="margin-top:7px"><label>Titre du commit / PR</label><input id="gitTitle" type="text" value="Mettre à jour l’interface"></div>
+      <div class="toolbar" style="margin-top:7px">
+        <button class="btn wide" id="gitStatusBtn">Vérifier Git</button>
+        <button class="btn primary wide" id="gitPublishBtn">Publier branche et PR</button>
+      </div>
+      <div class="compare-status" id="gitStatusText">Disponible pour une application ouverte depuis un dossier Git local.</div>
+    </section>
+
+    <section class="card">
+      <h2>Simulation système <small>Android / accessibilité</small></h2>
+      <div class="fields">
+        <div class="field"><label>Taille texte Android</label><select id="systemFontScale">
+          <option value=".85">85 %</option><option value="1" selected>100 %</option><option value="1.15">115 %</option><option value="1.3">130 %</option><option value="1.5">150 %</option>
+        </select></div>
+        <div class="field"><label>Échelle affichage</label><select id="systemDisplayScale">
+          <option value=".9">90 %</option><option value="1" selected>100 %</option><option value="1.1">110 %</option><option value="1.2">120 %</option>
+        </select></div>
+      </div>
+      <label class="checkline"><input id="systemDarkMode" type="checkbox"> Simuler le thème sombre</label>
+      <div class="field" style="margin-top:8px"><label>Clavier Android</label><select id="systemKeyboard">
+        <option value="0">Fermé</option><option value="220">Petit · 220 px</option><option value="280">Normal · 280 px</option><option value="340">Grand · 340 px</option>
+      </select></div>
+      <p>Teste les interfaces avec les réglages système qui font souvent apparaître les textes coupés ou les chevauchements.</p>
+    </section>
+
+
+    <section class="card">
+      <h2>Cohérence du design <small>détection automatique</small></h2>
+      <button class="btn primary" id="consistencyBtn" style="width:100%">Analyser les incohérences</button>
+      <div class="consistency-status" id="consistencyStatus">Repère tailles de texte, rayons, gaps et couleurs rares par rapport au reste de l’interface.</div>
+      <div class="consistency-list" id="consistencyList"></div>
+    </section>
+
+    <section class="card">
+      <h2>Vérifier l’interface <small>audit automatique</small></h2>
+      <div class="toolbar"><button class="btn primary wide" id="auditBtn">Analyser l’écran actuel</button><button class="btn wide" id="auditFixBtn">Corriger automatiquement</button></div>
+      <div class="toolbar" style="margin-top:7px"><button class="btn wide" id="repairAssistantBtn">Réparer avec aperçu</button><button class="btn wide desktop-only" id="testMatrixBtn">Tester 12 configurations</button></div>
+      <div class="audit-summary" id="auditSummary"></div>
+      <div class="audit-list" id="auditList"><div class="hint">Aucun audit lancé.</div></div>
+    </section>
+
+    <section class="card desktop-only">
+      <h2>Comparer avec l’APK <small>ADB / capture</small></h2>
+      <div class="compare-controls">
+        <div class="toolbar">
+          <button class="btn wide" id="adbCaptureBtn">Capturer le téléphone via ADB</button>
+          <button class="btn wide" id="loadReferenceBtn">Charger une capture</button>
+        </div>
+        <div class="field"><label>Opacité de la capture réelle</label><input id="referenceOpacity" type="range" min="0" max="100" value="50"></div>
+        <button class="btn" id="clearReferenceBtn">Retirer la comparaison</button>
+        <div class="compare-status" id="compareStatus">Superpose une capture réelle du téléphone à l’aperçu pour repérer immédiatement les différences.</div>
+      </div>
+    </section>
+
+
+    <section class="card desktop-only">
+      <h2>Code source direct <small>diff avant validation</small></h2>
+      <div class="source-edit-status" id="directSourceStatus">Pour un dossier HTML local, Studio cherche la vraie règle CSS correspondant à l’objet sélectionné.</div>
+      <button class="btn primary" id="prepareDirectEditBtn" style="width:100%;margin-top:8px">Préparer le diff du fichier source</button>
+    </section>
+
+    <section class="card desktop-only">
+      <h2>Projet PC <small>fichier local</small></h2>
+      <div class="toolbar">
+        <button class="btn wide" id="saveProjectBtn2">Enregistrer projet</button>
+        <button class="btn wide" id="openProjectBtn2">Ouvrir projet</button>
+      </div>
+      <button class="btn primary" id="exportChatGPTBtn2" style="width:100%;margin-top:7px">Exporter un fichier prêt pour ChatGPT</button>
+      <button class="btn" id="copyChatGPTBtn" style="width:100%;margin-top:7px">Copier le projet pour ChatGPT</button>
+      <button class="btn" id="applySourceBtn" style="width:100%;margin-top:7px">Appliquer au code local (réversible)</button>
+      <p>Le fichier projet conserve la source de l’application et les réglages exacts. L’export ChatGPT ajoute les instructions nécessaires pour reporter proprement ces choix dans le code source correspondant.</p>
+    </section>
+
+    <section class="card">
+      <h2>CSS produit <small>avancé</small></h2>
+      <textarea class="code" id="cssOut" spellcheck="false" readonly>/* Aucun ajustement. */</textarea>
+      <div class="toolbar" style="margin-top:7px">
+        <button class="btn" id="copyBtn">Copier CSS</button>
+        <button class="btn" id="downloadBtn">Exporter .css</button>
+        <button class="btn" id="resetBtn">Tout réinitialiser</button>
+      </div>
+      <div class="status" id="status"></div>
+    </section>
+  </aside>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  var desktop=window.AppInterfaceStudio||window.RadioDesktop||null;
+  if(desktop && desktop.isDesktop) document.body.classList.add('desktop');
+
+  var frame=document.getElementById('appFrame');
+  var device=document.getElementById('device');
+  var stage=document.getElementById('stage');
+  var rulerX=document.getElementById('rulerX');
+  var rulerY=document.getElementById('rulerY');
+  var preset=document.getElementById('devicePreset');
+  var zoom=document.getElementById('zoom');
+  var grid=document.getElementById('grid');
+  var step=document.getElementById('step');
+  var selector=document.getElementById('selector');
+  var cssOut=document.getElementById('cssOut');
+  var status=document.getElementById('status');
+  var undoBtn=document.getElementById('undoEdit');
+  var redoBtn=document.getElementById('redoEdit');
+  var deleteBtn=document.getElementById('deleteEdit');
+  var lockBtn=document.getElementById('lockEdit');
+  var zIndex=document.getElementById('zIndex');
+  var colorText=document.getElementById('colorText');
+  var colorBg=document.getElementById('colorBg');
+  var colorBorder=document.getElementById('colorBorder');
+  var textCard=document.getElementById('textCard');
+  var textContent=document.getElementById('textContent');
+  var fontFamily=document.getElementById('fontFamily');
+  var fontSize=document.getElementById('fontSize');
+  var boldBtn=document.getElementById('boldBtn');
+  var italicBtn=document.getElementById('italicBtn');
+  var underlineBtn=document.getElementById('underlineBtn');
+  var letterSpacing=document.getElementById('letterSpacing');
+  var lineHeight=document.getElementById('lineHeight');
+  var posX=document.getElementById('posX');
+  var posY=document.getElementById('posY');
+  var sizeW=document.getElementById('sizeW');
+  var sizeH=document.getElementById('sizeH');
+  var keepRatio=document.getElementById('keepRatio');
+  var safeProfile=document.getElementById('safeProfile');
+  var safeOutline=document.getElementById('safeOutline');
+  var responsiveCard=document.getElementById('responsiveCard');
+  var responsiveEnabled=document.getElementById('responsiveEnabled');
+  var hAnchor=document.getElementById('hAnchor');
+  var vAnchor=document.getElementById('vAnchor');
+  var widthMode=document.getElementById('widthMode');
+  var heightMode=document.getElementById('heightMode');
+  var marginLeft=document.getElementById('marginLeft');
+  var marginRight=document.getElementById('marginRight');
+  var marginTop=document.getElementById('marginTop');
+  var marginBottom=document.getElementById('marginBottom');
+  var widthPercent=document.getElementById('widthPercent');
+  var heightPercent=document.getElementById('heightPercent');
+  var respectSafeArea=document.getElementById('respectSafeArea');
+  var responsiveSummary=document.getElementById('responsiveSummary');
+  var metrics={x:document.getElementById('mx'),y:document.getElementById('my'),w:document.getElementById('mw'),h:document.getElementById('mh')};
+  var settingsModal=document.getElementById('settingsModal');
+  var uiFontScale=document.getElementById('uiFontScale');
+  var uiFontScaleValue=document.getElementById('uiFontScaleValue');
+  var uiDensity=document.getElementById('uiDensity');
+  var uiAnimations=document.getElementById('uiAnimations');
+  var defaultResponsivePref=document.getElementById('defaultResponsivePref');
+  var rememberPanels=document.getElementById('rememberPanels');
+  var deviceKindGrid=document.getElementById('deviceKindGrid');
+  var customDeviceFields=document.getElementById('customDeviceFields');
+  var customDeviceWidth=document.getElementById('customDeviceWidth');
+  var customDeviceHeight=document.getElementById('customDeviceHeight');
+  var customScreenSize=document.getElementById('customScreenSize');
+  var screenCustomW=document.getElementById('screenCustomW');
+  var screenCustomH=document.getElementById('screenCustomH');
+  var previewExit=document.getElementById('previewExit');
+  var breakpointEdit=document.getElementById('breakpointEdit');
+  var breakpointActive=document.getElementById('breakpointActive');
+  var layerTree=document.getElementById('layerTree');
+  var layoutDisplay=document.getElementById('layoutDisplay');
+  var layoutGap=document.getElementById('layoutGap');
+  var layoutFlexDirection=document.getElementById('layoutFlexDirection');
+  var layoutJustify=document.getElementById('layoutJustify');
+  var layoutAlign=document.getElementById('layoutAlign');
+  var layoutColumns=document.getElementById('layoutColumns');
+  var layoutParentName=document.getElementById('layoutParentName');
+  var auditSummary=document.getElementById('auditSummary');
+  var auditList=document.getElementById('auditList');
+  var referenceOverlay=document.getElementById('referenceOverlay');
+  var compareStatus=document.getElementById('compareStatus');
+  var multiPreviewModal=document.getElementById('multiPreviewModal');
+  var multiPreviewGrid=document.getElementById('multiPreviewGrid');
+  var componentList=document.getElementById('componentList');
+  var versionList=document.getElementById('versionList');
+  var prototypeStatus=document.getElementById('prototypeStatus');
+  var regressionStatus=document.getElementById('regressionStatus');
+  var regressionDiff=document.getElementById('regressionDiff');
+  var gitStatusText=document.getElementById('gitStatusText');
+  var sourceDiffModal=document.getElementById('sourceDiffModal');
+  var sourceDiffCode=document.getElementById('sourceDiffCode');
+  var sourceDiffFile=document.getElementById('sourceDiffFile');
+  var flowModal=document.getElementById('flowModal');
+  var flowCanvas=document.getElementById('flowCanvas');
+  var matrixModal=document.getElementById('matrixModal');
+  var matrixStatus=document.getElementById('matrixStatus');
+  var matrixList=document.getElementById('matrixList');
+  var repairModal=document.getElementById('repairModal');
+  var repairList=document.getElementById('repairList');
+  var nativeStatus=document.getElementById('nativeStatus');
+  var nativeList=document.getElementById('nativeList');
+  var directSourceStatus=document.getElementById('directSourceStatus');
+  var consistencyStatus=document.getElementById('consistencyStatus');
+  var consistencyList=document.getElementById('consistencyList');
+  var autoLayoutStatus=document.getElementById('autoLayoutStatus');
+
+  var hasSelection=false;
+  var lastState=null;
+  var projectResolver=null;
+  var currentSource=null;
+  var readyWaiters=[];
+  var currentPreviewMode='edit';
+  var selectedDeviceKind='smartphone';
+  var multiFrames=[];
+  var multiProject=null;
+  var multiSyncTimer=null;
+  var multiSyncBusy=false;
+  var activeMultiRec=null;
+  var namedVersions=[];
+  var componentCatalog=[];
+  var regressionBaseline=null;
+  var pendingDirectDiff=null;
+  var pendingNativeDiff=null;
+  var pendingDiffKind=null;
+  var nativeNodes=[];
+  var selectedNativeNode=null;
+  var lastRepairItems=[];
+
+  function postTo(target,type,payload){
+    if(!target||!target.contentWindow)return;
+    target.contentWindow.postMessage({source:'app-layout-host',type:type,payload:payload||{}},'*');
+  }
+
+  function activeEditorFrame(){
+    return activeMultiRec&&activeMultiRec.iframe?activeMultiRec.iframe:frame;
+  }
+
+  function post(type,payload){
+    postTo(activeEditorFrame(),type,payload);
+  }
+
+  var PREF_KEY='app-interface-studio.preferences.v1';
+  var defaultPrefs={fontScale:100,density:'normal',animations:true,defaultResponsive:true,rememberPanels:false,openPanels:[]};
+  var prefs=Object.assign({},defaultPrefs);
+
+  function loadPrefs(){
+    try{prefs=Object.assign({},defaultPrefs,JSON.parse(localStorage.getItem(PREF_KEY)||'{}'))}catch(_){prefs=Object.assign({},defaultPrefs)}
+  }
+
+  function savePrefs(){
+    try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs))}catch(_){}
+  }
+
+  function applyPrefs(){
+    document.documentElement.style.setProperty('--ui-font-scale',String((Number(prefs.fontScale)||100)/100));
+    document.body.dataset.density=prefs.density||'normal';
+    document.body.classList.toggle('no-animations',prefs.animations===false);
+    uiFontScale.value=Number(prefs.fontScale)||100;
+    uiFontScaleValue.textContent=String(Number(prefs.fontScale)||100);
+    uiDensity.value=prefs.density||'normal';
+    uiAnimations.checked=prefs.animations!==false;
+    defaultResponsivePref.checked=prefs.defaultResponsive!==false;
+    rememberPanels.checked=!!prefs.rememberPanels;
+    post('preferences',{defaultResponsive:prefs.defaultResponsive!==false});
+  }
+
+  function cardKey(card,index){
+    var title=(card.querySelector(':scope > h2')||{}).textContent||('section-'+index);
+    return title.replace(/\s+/g,' ').trim().toLowerCase();
+  }
+
+  function syncOpenPanels(){
+    if(!prefs.rememberPanels)return;
+    prefs.openPanels=Array.from(document.querySelectorAll('.side > .card')).map(function(card,index){
+      return card.classList.contains('collapsed')?null:cardKey(card,index);
+    }).filter(Boolean);
+    savePrefs();
+  }
+
+  function initializeCards(){
+    document.querySelectorAll('.side > .card').forEach(function(card,index){
+      if(card.dataset.accordionReady==='1')return;
+      card.dataset.accordionReady='1';
+      var head=card.querySelector(':scope > h2');
+      if(!head)return;
+      var body=document.createElement('div');
+      body.className='card-body';
+      Array.from(card.childNodes).forEach(function(node){
+        if(node!==head)body.appendChild(node);
+      });
+      card.appendChild(body);
+      var key=cardKey(card,index);
+      var shouldOpen=!!(prefs.rememberPanels&&Array.isArray(prefs.openPanels)&&prefs.openPanels.indexOf(key)>=0);
+      card.classList.toggle('collapsed',!shouldOpen);
+      head.setAttribute('role','button');
+      head.setAttribute('tabindex','0');
+      head.setAttribute('aria-expanded',String(shouldOpen));
+      function toggle(){
+        var next=card.classList.toggle('collapsed');
+        head.setAttribute('aria-expanded',String(!next));
+        syncOpenPanels();
+      }
+      head.addEventListener('click',toggle);
+      head.addEventListener('keydown',function(e){
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}
+      });
+    });
+  }
+
+
+  function currentDeviceSize(){
+    if(preset.value==='custom'){
+      return {
+        width:Math.max(240,Number(screenCustomW.value)||Number(customDeviceWidth.value)||412),
+        height:Math.max(240,Number(screenCustomH.value)||Number(customDeviceHeight.value)||915)
+      };
+    }
+    var bits=String(preset.value||'412x915').split('x');
+    return {width:Number(bits[0])||412,height:Number(bits[1])||915};
+  }
+
+  function isRadioSource(){
+    var text=String((currentSource&&currentSource.label)||'')+' '+String((currentSource&&currentSource.url)||'');
+    return /radio-intelligente|radio intelligente/i.test(text);
+  }
+
+  function androidInsets(){
+    var size=currentDeviceSize();
+    if(selectedDeviceKind==='tv')return {top:0,right:0,bottom:0,left:0};
+    if(selectedDeviceKind==='tablet'||size.width>=700)return {top:24,right:0,bottom:24,left:0};
+    return {top:28,right:0,bottom:24,left:0};
+  }
+
+  function previewProfile(){
+    var s=currentPreviewMode==='android'?androidInsets():safeAreaValues();
+    return {
+      topInset:s.top||0,rightInset:s.right||0,bottomInset:s.bottom||0,leftInset:s.left||0,
+      statusBarColor:isRadioSource()?'#6f42c1':'#111111',
+      navigationBarColor:'#000000',
+      backgroundColor:'#ffffff'
+    };
+  }
+
+  function applyDeviceKind(kind){
+    selectedDeviceKind=kind||'smartphone';
+  
+  document.getElementById('applyDirectDiffBtn').addEventListener('click',applyPendingDiff);
+  document.getElementById('closeDirectDiffBtn').addEventListener('click',function(){sourceDiffModal.classList.remove('visible')});
+  document.getElementById('closeFlowBtn').addEventListener('click',function(){flowModal.classList.remove('visible')});
+  document.getElementById('refreshFlowBtn').addEventListener('click',openFlow);
+  document.getElementById('closeMatrixBtn').addEventListener('click',function(){matrixModal.classList.remove('visible')});
+  document.getElementById('runMatrixBtn').addEventListener('click',runTestMatrix);
+  document.getElementById('closeRepairBtn').addEventListener('click',function(){repairModal.classList.remove('visible');post('repair-preview-clear')});
+  document.getElementById('clearRepairPreviewBtn').addEventListener('click',function(){post('repair-preview-clear')});
+
+  document.querySelectorAll('[data-device-kind]').forEach(function(btn){
+      btn.classList.toggle('active',btn.dataset.deviceKind===selectedDeviceKind);
+    });
+    customDeviceFields.classList.toggle('visible',selectedDeviceKind==='custom');
+
+    if(selectedDeviceKind==='smartphone')preset.value='412x915';
+    if(selectedDeviceKind==='tablet')preset.value='768x1024';
+    if(selectedDeviceKind==='tv')preset.value='1920x1080';
+    if(selectedDeviceKind==='desktop')preset.value='1366x768';
+    if(selectedDeviceKind==='custom'){
+      preset.value='custom';
+      screenCustomW.value=customDeviceWidth.value||412;
+      screenCustomH.value=customDeviceHeight.value||915;
+    }
+    safeProfile.value=(selectedDeviceKind==='smartphone')?'auto':'none';
+    setDevice();
+  }
+
+  function inferDeviceKind(){
+    if(preset.value==='custom')return 'custom';
+    var size=currentDeviceSize();
+    if(size.width>=1200&&size.height<=1080)return preset.value==='1366x768'||preset.value==='1440x900'?'desktop':'tv';
+    if(size.width>=700)return 'tablet';
+    return 'smartphone';
+  }
+
+  async function setPreviewMode(mode){
+    mode=(mode==='preview'||mode==='android')?mode:'edit';
+    currentPreviewMode=mode;
+    document.body.classList.toggle('preview-mode',mode==='preview');
+    document.body.classList.toggle('android-mode',mode==='android');
+    device.classList.toggle('android-exact',mode==='android');
+    document.querySelectorAll('[data-preview-mode]').forEach(function(btn){
+      btn.classList.toggle('active',btn.dataset.previewMode===mode);
+    });
+
+    if(mode==='android'){
+      var a=androidInsets();
+      device.style.setProperty('--android-status',a.top+'px');
+      device.style.setProperty('--android-nav',a.bottom+'px');
+      device.style.setProperty('--android-status-color',isRadioSource()?'#6f42c1':'#111111');
+      device.style.setProperty('--android-nav-color','#000000');
+    }
+
+    if(mode==='edit')post('enable');
+    else post('disable');
+
+    if(desktop&&desktop.setPreviewMode){
+      await desktop.setPreviewMode({
+        mode:mode,
+        source:currentSource,
+        profile:previewProfile()
+      });
+    }
+    setDevice();
+  }
+
+  async function openAsApp(){
+    if(!desktop||!desktop.openAsApp||!currentSource){
+      setStatus('Ouvre d’abord une application.',true);return;
+    }
+    var size=currentDeviceSize();
+    var useAndroid=selectedDeviceKind==='smartphone'||selectedDeviceKind==='tablet';
+    var result=await desktop.openAsApp({
+      source:currentSource,
+      width:size.width,
+      height:size.height,
+      androidExact:useAndroid,
+      profile:useAndroid?Object.assign({},previewProfile(),androidInsets()):previewProfile()
+    });
+    if(result&&result.ok)setStatus('Fenêtre application ouverte en '+result.width+' × '+result.height+(result.androidExact?' · Android exact':'')+'.');
+    else if(result&&result.error)setStatus(result.error,true);
+  }
+
+  function rgbToHex(value,fallback){
+    if(!value)return fallback;
+    if(/^#[0-9a-f]{6}$/i.test(value))return value;
+    var m=String(value).match(/rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/i);
+    if(!m)return fallback;
+    return '#'+[m[1],m[2],m[3]].map(function(v){return Math.max(0,Math.min(255,Number(v))).toString(16).padStart(2,'0')}).join('');
+  }
+
+  function resolvedSafeProfile(){
+    if(currentPreviewMode==='android')return 'android-hole';
+    if(safeProfile.value!=='auto')return safeProfile.value;
+    var size=currentDeviceSize();
+    if(size.width>=700)return 'none';
+    if(preset.value==='390x844')return 'iphone-island';
+    return 'android-hole';
+  }
+
+  function safeAreaValues(){
+    if(currentPreviewMode==='android'){
+      /* Le WebView natif est déjà dimensionné entre les barres système :
+         ne pas appliquer une deuxième fois ces insets à son contenu. */
+      return {profile:'android-exact',top:0,right:0,bottom:0,left:0,notch:'none'};
+    }
+    var profile=resolvedSafeProfile();
+    if(profile==='android-hole')return {profile:profile,top:28,right:0,bottom:24,left:0,notch:'hole'};
+    if(profile==='iphone-island')return {profile:profile,top:59,right:0,bottom:34,left:0,notch:'island'};
+    return {profile:'none',top:0,right:0,bottom:0,left:0,notch:'none'};
+  }
+
+  function applySafeArea(){
+    var s=safeAreaValues();
+    device.classList.toggle('notch-hole',s.notch==='hole');
+    device.classList.toggle('notch-island',s.notch==='island');
+    safeOutline.classList.toggle('visible',!!(s.top||s.right||s.bottom||s.left));
+    safeOutline.style.top=s.top+'px';
+    safeOutline.style.right=s.right+'px';
+    safeOutline.style.bottom=s.bottom+'px';
+    safeOutline.style.left=s.left+'px';
+    post('safe-area',s);
+    if(desktop&&desktop.setPreviewMode&&currentPreviewMode!=='edit'){
+      desktop.setPreviewMode({mode:currentPreviewMode,source:currentSource,profile:previewProfile()});
+    }
+  }
+
+  function setDevice(){
+    var size=currentDeviceSize();
+    var w=size.width,h=size.height;
+    customScreenSize.style.display=preset.value==='custom'?'grid':'none';
+    var z=Number(zoom.value);
+    if(currentPreviewMode!=='edit'){
+      z=Math.min(window.innerWidth/w,window.innerHeight/h);
+      if(!Number.isFinite(z)||z<=0)z=1;
+    }
+    device.style.width=w+'px';
+    device.style.height=h+'px';
+    device.style.transform='scale('+z+')';
+    device.classList.toggle('wide',w>=700);
+    rulerX.style.width=w+'px';
+    rulerY.style.height=h+'px';
+    if(currentPreviewMode==='edit'){
+      stage.style.width=(31+w*z+20)+'px';
+      stage.style.height=(31+h*z+20)+'px';
+    }else{
+      stage.style.width=(w*z)+'px';
+      stage.style.height=(h*z)+'px';
+    }
+    if(currentPreviewMode==='android'){
+      var a=androidInsets();
+      device.style.setProperty('--android-status',a.top+'px');
+      device.style.setProperty('--android-nav',a.bottom+'px');
+    }
+    applySafeArea();
+  }
+
+  function setStatus(message,error){
+    status.textContent=message||'';
+    status.style.color=error?'#a52b4e':'#267557';
+  }
+
+  function setActive(button,on){
+    if(button)button.classList.toggle('active',!!on);
+  }
+
+  function updateResponsiveControls(p){
+    var base=(p&&p.responsive)||{};
+    var selected=!!(p&&p.selected);
+    var editBp=(p&&p.editingBreakpoint)||breakpointEdit.value||'base';
+    if(Array.from(breakpointEdit.options).some(function(o){return o.value===editBp}))breakpointEdit.value=editBp;
+    var activeBp=(p&&p.activeBreakpoint)||'phone';
+    breakpointActive.textContent='actif : '+(activeBp==='phone'?'téléphone':activeBp==='tablet'?'tablette':'grand écran');
+
+    var r=base;
+    if(editBp!=='base'&&base.breakpoints&&base.breakpoints[editBp])r=base.breakpoints[editBp];
+    else if(editBp!=='base'&&p&&p.responsiveEffective)r=p.responsiveEffective;
+
+    var enabled=selected&&!!base.enabled;
+    responsiveEnabled.disabled=!selected;
+    responsiveEnabled.checked=enabled;
+    responsiveCard.classList.toggle('off',!enabled);
+    [hAnchor,vAnchor,widthMode,heightMode,marginLeft,marginRight,marginTop,marginBottom,widthPercent,heightPercent,respectSafeArea].forEach(function(el){el.disabled=!selected||!enabled});
+    breakpointEdit.disabled=!selected;
+    document.getElementById('captureResponsive').disabled=!selected;
+    if(!selected){
+      responsiveSummary.textContent='Sélectionne un élément puis active les contraintes.';
+      return;
+    }
+    hAnchor.value=r.hAnchor||'free';
+    vAnchor.value=r.vAnchor||'free';
+    widthMode.value=r.widthMode||'auto';
+    heightMode.value=r.heightMode||'auto';
+    marginLeft.value=Number(r.marginLeft)||0;
+    marginRight.value=Number(r.marginRight)||0;
+    marginTop.value=Number(r.marginTop)||0;
+    marginBottom.value=Number(r.marginBottom)||0;
+    widthPercent.value=Number(r.widthPercent)||100;
+    heightPercent.value=Number(r.heightPercent)||100;
+    respectSafeArea.checked=r.safeArea!==false;
+    responsiveSummary.textContent=enabled
+      ? 'Règles '+(editBp==='base'?'de base':editBp)+' : '+(r.hAnchor||'libre')+' / '+(r.vAnchor||'libre')+' · largeur '+(r.widthMode||'auto')+' · hauteur '+(r.heightMode||'auto')+(r.safeArea!==false?' · zone sûre':'')
+      : 'Mode pixels actif. Coche la case pour conserver la disposition sur d’autres tailles d’écran.';
+  }
+
+  function updateLayoutControls(layout){
+    layout=layout||{};
+    var editable=!!layout.editable;
+    [layoutDisplay,layoutGap,layoutFlexDirection,layoutJustify,layoutAlign,layoutColumns,document.getElementById('applyParentLayout')].forEach(function(el){if(el)el.disabled=!editable});
+    layoutParentName.textContent=editable?'Parent : '+(layout.selector||'conteneur')+' · '+(layout.display||'bloc'):'Sélectionne un objet dans un conteneur modifiable.';
+    if(!editable)return;
+    if(Array.from(layoutDisplay.options).some(function(o){return o.value===layout.display}))layoutDisplay.value=layout.display;
+    else layoutDisplay.value=layout.display.indexOf('flex')>=0?'flex':layout.display.indexOf('grid')>=0?'grid':'block';
+    layoutGap.value=layout.gap||'0px';
+    if(Array.from(layoutFlexDirection.options).some(function(o){return o.value===layout.flexDirection}))layoutFlexDirection.value=layout.flexDirection;
+    if(Array.from(layoutJustify.options).some(function(o){return o.value===layout.justifyContent}))layoutJustify.value=layout.justifyContent;
+    if(Array.from(layoutAlign.options).some(function(o){return o.value===layout.alignItems}))layoutAlign.value=layout.alignItems;
+    layoutColumns.value=layout.gridTemplateColumns&&layout.gridTemplateColumns!=='none'?layout.gridTemplateColumns:'';
+  }
+
+
+  function updateState(p){
+    lastState=p;
+    hasSelection=!!p.selected;
+    var selectionCount=Number(p.selectionCount)||0;
+    selector.textContent=p.selected?(selectionCount>1?selectionCount+' objets sélectionnés · Maj+clic pour modifier la sélection':p.selector):'Clique un élément dans l’aperçu.';
+    metrics.x.textContent=p.selected?p.x:'—';
+    metrics.y.textContent=p.selected?p.y:'—';
+    metrics.w.textContent=p.selected?p.width:'—';
+    metrics.h.textContent=p.selected?p.height:'—';
+
+    var responsiveActive=!!(p.selected&&p.responsive&&p.responsive.enabled);
+    [sizeW,sizeH,zIndex].forEach(function(el){el.disabled=!p.selected||selectionCount>1});
+    posX.disabled=!p.selected||responsiveActive||selectionCount>1;
+    posY.disabled=!p.selected||responsiveActive||selectionCount>1;
+    posX.title=responsiveActive?'Coordonnée informative : utilise les ancrages et marges du panneau Adaptatif.':'Position absolue disponible uniquement en mode non adaptatif.';
+    posY.title=posX.title;
+    deleteBtn.disabled=!p.selected;
+    lockBtn.disabled=!p.selected;
+
+    if(p.selected){
+      posX.value=Math.round(p.x);
+      posY.value=Math.round(p.y);
+      sizeW.value=Math.round(p.width);
+      sizeH.value=Math.round(p.height);
+      zIndex.value=Number(p.zIndex)||0;
+      colorText.value=rgbToHex(p.color,'#000000');
+      colorBg.value=rgbToHex(p.backgroundColor,'#ffffff');
+      colorBorder.value=rgbToHex(p.borderColor,'#dddddd');
+      lockBtn.textContent=p.locked?'🔒 Déverrouiller':'🔓 Verrouiller';
+
+      var editable=!!p.textEditable&&selectionCount<=1;
+      textCard.classList.toggle('disabled',!editable);
+      textContent.disabled=!editable;
+      fontFamily.disabled=!editable;
+      fontSize.disabled=!editable;
+      letterSpacing.disabled=!editable;
+      lineHeight.disabled=!editable;
+      if(editable){
+        textContent.value=p.textContent==null?'':p.textContent;
+        fontSize.value=p.fontSize||16;
+        var options=Array.from(fontFamily.options);
+        var exact=options.find(function(o){return o.value===p.fontFamily});
+        if(exact)fontFamily.value=exact.value;
+        else if(String(p.fontFamily||'').toLowerCase().indexOf('segoe')>=0)fontFamily.selectedIndex=0;
+        setActive(boldBtn,Number(p.fontWeight)>=600 || String(p.fontWeight).toLowerCase()==='bold');
+        setActive(italicBtn,String(p.fontStyle)==='italic');
+        setActive(underlineBtn,String(p.textDecoration||'').indexOf('underline')>=0);
+        document.querySelectorAll('[data-text-align]').forEach(function(b){setActive(b,b.dataset.textAlign===p.textAlign)});
+        var ls=parseFloat(p.letterSpacing); letterSpacing.value=Number.isFinite(ls)?ls:0;
+        var lh=parseFloat(p.lineHeight); lineHeight.value=Number.isFinite(lh)?lh:1.2;
+      }
+    }else{
+      textCard.classList.add('disabled');
+      textContent.value='';
+      [posX,posY,sizeW,sizeH,zIndex].forEach(function(el){el.value=''});
+    }
+
+    updateResponsiveControls(p);
+    updateLayoutControls(p.parentLayout);
+    syncAdvancedControls(p);
+    if(p.tokens)syncTokenInputs(p.tokens);
+    if(p.animation){
+      document.getElementById('animationProperty').value=p.animation.property||'all';
+      document.getElementById('animationDuration').value=Number(p.animation.duration)||0;
+      var easingOptions=Array.from(document.getElementById('animationEasing').options);
+      if(easingOptions.some(function(o){return o.value===p.animation.easing}))document.getElementById('animationEasing').value=p.animation.easing;
+    }
+    if(p.interactiveState)document.getElementById('interactiveState').value=p.interactiveState;
+    document.getElementById('prototypeTarget').value=p.prototypeTarget||'';
+    if(p.componentName)document.getElementById('componentName').value=p.componentName;
+    if(selectionCount>1){
+      responsiveSummary.textContent='Sélection multiple : déplace le groupe avec la souris ou les flèches. Les propriétés individuelles restent attachées à l’objet principal.';
+    }
+    if(typeof p.css==='string')cssOut.value=p.css;
+  }
+
+
+  function renderLayers(tree){
+    layerTree.innerHTML='';
+    var frag=document.createDocumentFragment();
+    function add(nodes){
+      (nodes||[]).forEach(function(node){
+        var row=document.createElement('div');
+        row.className='layer-row'+(node.selected?' selected':'');
+        var main=document.createElement('button');
+        main.className='layer-main';
+        main.style.setProperty('--depth',String(node.depth||0));
+        main.title=node.selector||node.title||'';
+        main.textContent=(node.title||node.tag||'élément')+' · '+(node.tag||'');
+        main.addEventListener('click',function(e){post('select-selector',{selector:node.selector,additive:e.shiftKey})});
+        var eye=document.createElement('button');
+        eye.className='layer-mini';eye.title=node.hidden?'Afficher':'Masquer';eye.textContent=node.hidden?'◌':'◉';
+        eye.addEventListener('click',function(){post('layer-hidden',{selector:node.selector,value:!node.hidden});setTimeout(function(){post('get-layers')},80)});
+        var lock=document.createElement('button');
+        lock.className='layer-mini';lock.title=node.locked?'Déverrouiller':'Verrouiller';lock.textContent=node.locked?'🔒':'🔓';
+        lock.addEventListener('click',function(){post('layer-lock',{selector:node.selector,value:!node.locked});setTimeout(function(){post('get-layers')},80)});
+        row.append(main,eye,lock);frag.appendChild(row);
+        add(node.children);
+      });
+    }
+    add(tree);
+    if(!frag.childNodes.length)layerTree.innerHTML='<div class="hint">Aucun élément visible.</div>';
+    else layerTree.appendChild(frag);
+  }
+
+  function renderAudit(payload){
+    payload=payload||{};
+    var summary=payload.summary||{};
+    auditSummary.innerHTML='<span class="audit-chip error">'+(summary.errors||0)+' erreurs</span><span class="audit-chip warning">'+(summary.warnings||0)+' avertissements</span><span class="audit-chip">'+(summary.info||0)+' infos</span><span class="audit-chip">'+(summary.fixable||0)+' corrigeables</span>';
+    auditList.innerHTML='';
+    var issues=payload.issues||[];
+    if(!issues.length){auditList.innerHTML='<div class="hint">Aucun problème détecté sur ce viewport.</div>';return}
+    issues.forEach(function(issue){
+      var item=document.createElement('button');
+      item.className='audit-item '+(issue.severity||'warning');
+      item.style.textAlign='left';
+      item.innerHTML='<b>'+(issue.type||'problème')+'</b><span></span>';
+      item.querySelector('span').textContent=issue.message||'';
+      item.title=issue.selector||'';
+      item.addEventListener('click',function(){if(issue.selector)post('select-selector',{selector:issue.selector})});
+      auditList.appendChild(item);
+    });
+  }
+
+
+  function syncAdvancedControls(p){
+    var styles=(p&&p.advancedStyles)||{};
+    document.getElementById('advPadding').value=styles.padding||'';
+    document.getElementById('advMargin').value=styles.margin||'';
+    document.getElementById('advRadius').value=styles['border-radius']||'';
+    document.getElementById('advShadow').value=styles['box-shadow']||'';
+    document.getElementById('advOpacity').value=styles.opacity||'';
+    document.getElementById('advFilter').value=styles.filter||'';
+    document.getElementById('advAspect').value=styles['aspect-ratio']||'';
+    document.getElementById('advOverflow').value=styles.overflow||'';
+    document.getElementById('advMinWidth').value=styles['min-width']||'';
+    document.getElementById('advMaxWidth').value=styles['max-width']||'';
+    document.getElementById('advPosition').value=styles.position||'';
+    document.getElementById('advObjectFit').value=styles['object-fit']||'';
+  }
+
+  function renderConsistency(payload){
+    payload=payload||{};
+    var issues=payload.issues||[];
+    consistencyList.innerHTML='';
+    consistencyStatus.textContent=issues.length?issues.length+' incohérence(s) ou valeur(s) rare(s) détectée(s).':'Aucune incohérence significative détectée.';
+    if(!issues.length)return;
+    issues.slice(0,80).forEach(function(issue){
+      var row=document.createElement('div');row.className='consistency-item';
+      row.innerHTML='<b></b><span></span>';
+      row.querySelector('b').textContent=issue.type+' · '+issue.value;
+      row.querySelector('span').textContent=issue.message||'';
+      row.addEventListener('click',function(){
+        var sel=issue.selectors&&issue.selectors[0];if(sel)post('select-selector',{selector:sel});
+      });
+      consistencyList.appendChild(row);
+    });
+  }
+
+  function renderRepairSuggestions(items){
+    lastRepairItems=Array.isArray(items)?items:[];
+    repairList.innerHTML='';
+    if(!lastRepairItems.length){repairList.innerHTML='<div class="hint" style="color:#ddd">Aucune correction sûre proposée. Lance d’abord l’audit.</div>';return}
+    lastRepairItems.forEach(function(item){
+      var row=document.createElement('div');row.className='repair-item';
+      var title=document.createElement('b');title.textContent=(item.type||'correction')+' · '+(item.selector||'');
+      var text=document.createElement('div');text.textContent=item.description||'';
+      var actions=document.createElement('div');actions.className='repair-actions';
+      var preview=document.createElement('button');preview.className='btn';preview.textContent='Prévisualiser';
+      preview.addEventListener('click',function(){post('repair-preview',{id:item.id})});
+      var apply=document.createElement('button');apply.className='btn primary';apply.textContent='Appliquer';
+      apply.addEventListener('click',function(){post('repair-apply',{id:item.id})});
+      actions.append(preview,apply);row.append(title,text,actions);repairList.appendChild(row);
+    });
+  }
+
+  async function prepareDirectSourceEdit(){
+    if(!desktop||!desktop.prepareDirectEdit){directSourceStatus.textContent='Fonction disponible dans l’application Windows.';return}
+    if(!currentSource||['folder','html'].indexOf(currentSource.type)<0){directSourceStatus.textContent='Ouvre une application HTML/PWA depuis un dossier local.';return}
+    if(!lastState||!lastState.selected){directSourceStatus.textContent='Sélectionne d’abord un objet.';return}
+    directSourceStatus.textContent='Recherche de la vraie règle CSS…';
+    var result=await desktop.prepareDirectEdit({source:currentSource,selector:lastState.selector,css:lastState.css||cssOut.value});
+    if(!result||!result.ok){directSourceStatus.textContent=result&&result.error||'Diff impossible.';return}
+    pendingDirectDiff=result;pendingNativeDiff=null;pendingDiffKind='direct';
+    sourceDiffFile.textContent=result.relativePath||result.file;
+    sourceDiffCode.textContent=result.diff||'Aucune différence.';
+    sourceDiffModal.classList.add('visible');
+    directSourceStatus.textContent='Diff prêt : '+(result.relativePath||result.file)+'.';
+  }
+
+  function renderNativeTree(nodes){
+    nativeNodes=Array.isArray(nodes)?nodes:[];
+    nativeList.innerHTML='';
+    if(!nativeNodes.length){nativeList.innerHTML='<div class="hint">Aucun élément Android exploitable.</div>';return}
+    nativeNodes.slice(0,300).forEach(function(node){
+      var row=document.createElement('div');row.className='native-item';
+      var title=document.createElement('b');title.textContent=(node.id?('#'+node.id+' · '):'')+(node.tag||'élément');
+      var detail=document.createElement('div');detail.textContent=(node.text?node.text+' · ':'')+(node.file?node.file.split(/[\\/]/).slice(-2).join('/'):'')+' · ligne '+(node.line||'—');
+      row.append(title,detail);
+      row.addEventListener('click',function(){
+        selectedNativeNode=node;
+        nativeList.querySelectorAll('.native-item').forEach(function(x){x.classList.remove('selected')});
+        row.classList.add('selected');
+        nativeStatus.textContent='Sélection native : '+(node.id||node.tag)+' · '+(node.compose?'Compose':'XML');
+        if(node.id)post('select-selector',{selector:'#native-'+node.id});
+      });
+      nativeList.appendChild(row);
+    });
+  }
+
+  async function refreshNativeTree(){
+    selectedNativeNode=null;
+    if(!currentSource||currentSource.type!=='android-project'){
+      nativeStatus.textContent='Ouvre un dossier Android pour activer ce mode.';nativeList.innerHTML='';return;
+    }
+    if(!desktop||!desktop.nativeTree)return;
+    nativeStatus.textContent='Lecture des sources Android…';
+    var result=await desktop.nativeTree({source:currentSource});
+    if(!result||!result.ok){nativeStatus.textContent=result&&result.error||'Lecture Android impossible.';return}
+    nativeStatus.textContent='Mode Android natif · '+(result.nativeKind||'Android')+' · '+(result.nodes||[]).length+' élément(s).';
+    renderNativeTree(result.nodes||[]);
+  }
+
+  async function prepareNativeEdit(){
+    if(!desktop||!desktop.prepareNativeEdit||!selectedNativeNode){nativeStatus.textContent='Sélectionne un élément Android dans la liste.';return}
+    var property=document.getElementById('nativeProperty').value;
+    var value=document.getElementById('nativeValue').value;
+    var result=await desktop.prepareNativeEdit({source:currentSource,node:selectedNativeNode,property:property,value:value});
+    if(!result||!result.ok){nativeStatus.textContent=result&&result.error||'Diff Android impossible.';return}
+    pendingNativeDiff=result;pendingDirectDiff=null;pendingDiffKind='native';
+    sourceDiffFile.textContent=result.file;
+    sourceDiffCode.textContent=result.diff||'Aucune différence.';
+    sourceDiffModal.classList.add('visible');
+    nativeStatus.textContent='Diff Android prêt.';
+  }
+
+  async function applyPendingDiff(){
+    var result=null;
+    if(pendingDiffKind==='native'&&pendingNativeDiff&&desktop&&desktop.applyNativeEdit){
+      result=await desktop.applyNativeEdit({source:currentSource,file:pendingNativeDiff.file,beforeHash:pendingNativeDiff.beforeHash,after:pendingNativeDiff.after});
+    }else if(pendingDiffKind==='direct'&&pendingDirectDiff&&desktop&&desktop.applyDirectEdit){
+      result=await desktop.applyDirectEdit({source:currentSource,file:pendingDirectDiff.file,beforeHash:pendingDirectDiff.beforeHash,after:pendingDirectDiff.after});
+    }
+    if(!result||!result.ok){setStatus(result&&result.error||'Application du diff impossible.',true);return}
+    sourceDiffModal.classList.remove('visible');
+    setStatus('Source modifiée : '+result.file+(result.backupPath?' · sauvegarde créée':''));
+    pendingDirectDiff=null;pendingNativeDiff=null;pendingDiffKind=null;
+    if(currentSource&&currentSource.type==='android-project'&&desktop&&desktop.restoreSource){
+      var restored=await desktop.restoreSource(currentSource);if(restored&&restored.ok)await loadSource(restored.source);
+    }else{
+      frame.contentWindow.location.reload();
+    }
+  }
+
+  async function openFlow(){
+    var project=await requestProject();
+    if(!project)return;
+    var links=project.prototypeLinks||{};
+    flowCanvas.innerHTML='';
+    var keys=Object.keys(links);
+    if(!keys.length){flowCanvas.innerHTML='<div class="hint" style="color:#ddd">Aucun lien de prototype. Crée une cible dans le panneau États et animations.</div>';flowModal.classList.add('visible');return}
+    var targets={};
+    keys.forEach(function(source){
+      var target=links[source]&&links[source].target;if(target)targets[target]=true;
+      var node=document.createElement('div');node.className='flow-node';
+      var title=document.createElement('strong');title.textContent='Source';
+      var src=document.createElement('small');src.textContent=source;
+      var link=document.createElement('div');link.className='flow-link';link.textContent='→ '+(target||'aucune cible');
+      var selectBtn=document.createElement('button');selectBtn.className='btn';selectBtn.textContent='Sélectionner la source';
+      selectBtn.addEventListener('click',function(){flowModal.classList.remove('visible');post('select-selector',{selector:source})});
+      node.append(title,src,link,selectBtn);flowCanvas.appendChild(node);
+    });
+    Object.keys(targets).forEach(function(target){
+      if(keys.indexOf(target)>=0)return;
+      var node=document.createElement('div');node.className='flow-node';
+      node.innerHTML='<strong>Cible</strong><small></small>';node.querySelector('small').textContent=target;
+      var btn=document.createElement('button');btn.className='btn';btn.textContent='Sélectionner la cible';
+      btn.addEventListener('click',function(){flowModal.classList.remove('visible');post('select-selector',{selector:target})});
+      node.appendChild(btn);flowCanvas.appendChild(node);
+    });
+    flowModal.classList.add('visible');
+  }
+
+  function renderMatrix(result){
+    matrixList.innerHTML='';
+    if(!result||!result.ok){matrixStatus.textContent=result&&result.error||'Tests impossibles.';return}
+    var summary=result.summary||{};
+    matrixStatus.textContent=summary.tested+' configurations testées · '+summary.failed+' avec anomalie · '+summary.totalIssues+' type(s) de problème.';
+    (result.results||[]).forEach(function(item){
+      var row=document.createElement('div');row.className='matrix-item '+((item.issues||[]).length?'fail':'pass');
+      var cfg=item.config||{};
+      var title=document.createElement('b');title.textContent=(cfg.name||'écran')+' · '+cfg.width+'×'+cfg.height+' · texte '+Math.round((cfg.fontScale||1)*100)+' %'+(cfg.keyboard?' · clavier':'');
+      var detail=document.createElement('div');detail.textContent=(item.issues||[]).length?(item.issues.map(function(x){return x.type+(x.count?' ×'+x.count:'')}).join(' · ')):'OK';
+      row.append(title,detail);
+      if(item.screenshot){
+        var img=document.createElement('img');img.src=item.screenshot;img.alt='Capture';img.style.cssText='display:block;width:120px;max-height:160px;object-fit:contain;margin-top:6px;border-radius:7px;border:1px solid var(--line)';row.appendChild(img);
+      }
+      matrixList.appendChild(row);
+    });
+  }
+
+  async function runTestMatrix(){
+    if(!desktop||!desktop.runTestMatrix||!currentSource){matrixStatus.textContent='Fonction disponible dans l’application Windows pour une source chargée.';return}
+    matrixModal.classList.add('visible');matrixStatus.textContent='Tests en cours sur 12 configurations…';matrixList.innerHTML='';
+    var project=await requestProject();
+    var result=await desktop.runTestMatrix({source:currentSource,css:project&&project.css||cssOut.value});
+    renderMatrix(result);
+  }
+
+  function rotateDevice(){
+    var size=currentDeviceSize();
+    preset.value='custom';
+    screenCustomW.value=size.height;
+    screenCustomH.value=size.width;
+    customDeviceWidth.value=size.height;
+    customDeviceHeight.value=size.width;
+    customScreenSize.style.display='grid';
+    setDevice();
+  }
+
+  function multiFrameRecord(sourceWindow){
+    return multiFrames.find(function(rec){return rec.iframe&&rec.iframe.contentWindow===sourceWindow})||null;
+  }
+
+  function fitMultiRecord(rec){
+    if(!rec||!rec.inner||!rec.iframe)return;
+    var maxW=rec.viewport.clientWidth-24;
+    var maxH=rec.viewport.clientHeight-24;
+    var scale=Math.min(maxW/rec.width,maxH/rec.height,1);
+    if(!Number.isFinite(scale)||scale<=0)scale=.5;
+    rec.inner.style.width=Math.round(rec.width*scale)+'px';
+    rec.inner.style.height=Math.round(rec.height*scale)+'px';
+    rec.iframe.style.width=rec.width+'px';
+    rec.iframe.style.height=rec.height+'px';
+    rec.iframe.style.transform='scale('+scale+')';
+    rec.iframe.style.transformOrigin='top left';
+  }
+
+  function multiSafeArea(rec){
+    if(rec.width<600)return {profile:'multi-phone',top:28,right:0,bottom:24,left:0};
+    if(rec.width<1024)return {profile:'multi-tablet',top:24,right:0,bottom:24,left:0};
+    return {profile:'none',top:0,right:0,bottom:0,left:0};
+  }
+
+  function sendMultiProject(rec){
+    if(!rec||!multiProject)return;
+    postTo(rec.iframe,'load-project',{project:multiProject});
+    postTo(rec.iframe,'safe-area',multiSafeArea(rec));
+    postTo(rec.iframe,'environment-set',{
+      fontScale:Number(document.getElementById('systemFontScale').value)||1,
+      displayScale:Number(document.getElementById('systemDisplayScale').value)||1,
+      darkMode:document.getElementById('systemDarkMode').checked,
+      keyboardHeight:Number(document.getElementById('systemKeyboard').value)||0
+    });
+    postTo(rec.iframe,activeMultiRec===rec?'enable':'disable');
+  }
+
+  function activateMultiEditor(rec){
+    if(!rec)return;
+    if(activeMultiRec&&activeMultiRec!==rec)postTo(activeMultiRec.iframe,'disable');
+    activeMultiRec=rec;
+    multiFrames.forEach(function(item){
+      if(item.card)item.card.classList.toggle('editing',item===rec);
+      if(item.editButton)item.editButton.textContent=item===rec?'Édition active':'Éditer ici';
+    });
+    postTo(frame,'disable');
+    sendMultiProject(rec);
+    postTo(rec.iframe,'enable');
+    setStatus('Édition multi-écrans active : '+rec.name+'. Les outils de droite modifient ce viewport.');
+  }
+
+  async function syncMultiPreview(){
+    if(!multiPreviewModal.classList.contains('visible')||multiSyncBusy)return;
+    multiSyncBusy=true;
+    try{
+      var project=await requestProject();
+      if(project){
+        project.source=currentSource;
+        multiProject=project;
+        if(activeMultiRec)postTo(frame,'load-project',{project:project});
+        multiFrames.forEach(function(rec){if(rec!==activeMultiRec)sendMultiProject(rec)});
+      }
+    }finally{multiSyncBusy=false}
+  }
+
+  function scheduleMultiSync(){
+    if(!multiPreviewModal.classList.contains('visible'))return;
+    if(multiSyncTimer)clearTimeout(multiSyncTimer);
+    multiSyncTimer=setTimeout(function(){multiSyncTimer=null;syncMultiPreview()},220);
+  }
+
+  async function openMultiPreview(){
+    if(!currentSource){setStatus('Ouvre d’abord une application.',true);return}
+    multiProject=await requestProject();
+    if(!multiProject){setStatus('Impossible de préparer la comparaison.',true);return}
+    multiProject.source=currentSource;
+    multiPreviewGrid.innerHTML='';
+    multiFrames=[];
+    var configs=[
+      {name:'Téléphone compact',width:360,height:800},
+      {name:'Galaxy / grand téléphone',width:412,height:915},
+      {name:'Tablette',width:768,height:1024},
+      {name:'Bureau',width:1366,height:768}
+    ];
+    configs.forEach(function(cfg){
+      var card=document.createElement('div');card.className='multi-card';
+      var head=document.createElement('div');head.className='multi-card-head';
+      var title=document.createElement('strong');title.textContent=cfg.name;
+      var sizeLabel=document.createElement('span');sizeLabel.textContent=cfg.width+' × '+cfg.height;
+      var editButton=document.createElement('button');editButton.className='multi-edit-btn';editButton.textContent='Éditer ici';
+      head.append(title,sizeLabel,editButton);
+      var viewport=document.createElement('div');viewport.className='multi-viewport';
+      var inner=document.createElement('div');inner.className='multi-inner';
+      var iframe=document.createElement('iframe');iframe.title=cfg.name;iframe.src=currentSource.url;
+      inner.appendChild(iframe);viewport.appendChild(inner);card.append(head,viewport);multiPreviewGrid.appendChild(card);
+      var rec={iframe:iframe,viewport:viewport,inner:inner,width:cfg.width,height:cfg.height,name:cfg.name,card:card,editButton:editButton};
+      editButton.addEventListener('click',function(){activateMultiEditor(rec)});
+      multiFrames.push(rec);
+      requestAnimationFrame(function(){fitMultiRecord(rec)});
+    });
+    multiPreviewModal.classList.add('visible');
+    setTimeout(function(){multiFrames.forEach(fitMultiRecord);if(desktop&&desktop.injectEditor)desktop.injectEditor()},350);
+  }
+
+  async function closeMultiPreview(){
+    if(activeMultiRec){
+      var project=await requestProject();
+      if(project){multiProject=project;postTo(frame,'load-project',{project:project})}
+      postTo(activeMultiRec.iframe,'disable');
+      activeMultiRec=null;
+      postTo(frame,'enable');
+    }
+    multiPreviewModal.classList.remove('visible');
+    multiPreviewGrid.innerHTML='';
+    multiFrames=[];
+    multiProject=null;
+  }
+
+  async function captureAdbReference(){
+    if(!desktop||!desktop.adbScreenshot){compareStatus.textContent='ADB disponible uniquement dans l’application Windows.';return}
+    compareStatus.textContent='Recherche du téléphone…';
+    var statusResult=await desktop.adbStatus();
+    if(!statusResult||!statusResult.ok){compareStatus.textContent=(statusResult&&statusResult.error)||'ADB indisponible.';return}
+    if(!statusResult.devices||!statusResult.devices.length){compareStatus.textContent='Aucun téléphone autorisé. Active le débogage USB et accepte la connexion ADB.';return}
+    await setPreviewMode('android');
+    var shot=await desktop.adbScreenshot({serial:statusResult.devices[0]});
+    if(!shot||!shot.ok){compareStatus.textContent=(shot&&shot.error)||'Capture impossible.';return}
+    referenceOverlay.src=shot.dataUrl;
+    referenceOverlay.classList.add('visible');
+    referenceOverlay.style.opacity=String((Number(document.getElementById('referenceOpacity').value)||50)/100);
+    compareStatus.textContent='Capture réelle '+shot.serial+' superposée. Fais varier l’opacité pour comparer.';
+  }
+
+  async function loadReferenceImage(){
+    if(!desktop||!desktop.pickReferenceImage)return;
+    var result=await desktop.pickReferenceImage();
+    if(!result||!result.ok)return;
+    referenceOverlay.src=result.dataUrl;
+    referenceOverlay.classList.add('visible');
+    referenceOverlay.style.opacity=String((Number(document.getElementById('referenceOpacity').value)||50)/100);
+    compareStatus.textContent='Capture de référence chargée : '+(result.path||'image')+'.';
+  }
+
+  async function applyToLocalSource(){
+    if(!desktop||!desktop.applyCssToSource){setStatus('Fonction disponible dans l’application Windows.',true);return}
+    if(!currentSource||['folder','html'].indexOf(currentSource.type)<0){setStatus('Ouvre un dossier ou fichier HTML local pour appliquer directement les changements.',true);return}
+    if(!confirm('Créer un patch CSS réversible dans le dossier source et l’ajouter à la page HTML ? Une sauvegarde du HTML sera créée.'))return;
+    var result=await desktop.applyCssToSource({source:currentSource,css:cssOut.value});
+    if(result&&result.ok)setStatus('Patch appliqué : '+result.cssPath+' · sauvegarde : '+result.backupPath);
+    else setStatus((result&&result.error)||'Application au code impossible.',true);
+  }
+
+
+  function renderComponents(items){
+    componentCatalog=Array.isArray(items)?items:[];
+    componentList.innerHTML='';
+    if(!componentCatalog.length){componentList.innerHTML='<div class="hint">Aucun composant.</div>';return}
+    componentCatalog.forEach(function(item){
+      var row=document.createElement('div');row.className='component-item';
+      var text=document.createElement('button');text.style.cssText='min-width:0;border:0;background:transparent;text-align:left;color:inherit';
+      text.innerHTML='<strong></strong><small></small>';
+      text.querySelector('strong').textContent=item.name;
+      text.querySelector('small').textContent=(item.count||0)+' instance(s) · '+((item.variants||[]).length)+' variante(s)';
+      text.addEventListener('click',function(){document.getElementById('componentName').value=item.name});
+      var actions=document.createElement('div');actions.className='mini-actions';
+      var del=document.createElement('button');del.textContent='×';del.title='Supprimer le composant';
+      del.addEventListener('click',function(){post('component-delete',{name:item.name})});
+      actions.appendChild(del);row.append(text,actions);componentList.appendChild(row);
+    });
+  }
+
+  function renderVersions(){
+    versionList.innerHTML='';
+    if(!namedVersions.length){versionList.innerHTML='<div class="hint">Aucun point de contrôle.</div>';return}
+    namedVersions.slice().reverse().forEach(function(item){
+      var row=document.createElement('div');row.className='version-item';
+      var text=document.createElement('div');text.innerHTML='<strong></strong><small></small>';
+      text.querySelector('strong').textContent=item.name;
+      text.querySelector('small').textContent=new Date(item.createdAt).toLocaleString();
+      if(item.thumbnail){
+        var thumb=document.createElement('img');
+        thumb.src=item.thumbnail;thumb.alt='Aperçu '+item.name;
+        thumb.style.cssText='display:block;width:78px;height:48px;object-fit:cover;border-radius:6px;margin-top:5px;border:1px solid var(--line)';
+        text.appendChild(thumb);
+      }
+      var actions=document.createElement('div');actions.className='mini-actions';
+      var restore=document.createElement('button');restore.textContent='↶';restore.title='Restaurer';
+      restore.addEventListener('click',function(){post('load-project',{project:item.project});setStatus('Version restaurée : '+item.name)});
+      var del=document.createElement('button');del.textContent='×';del.title='Supprimer';
+      del.addEventListener('click',function(){namedVersions=namedVersions.filter(function(v){return v.id!==item.id});renderVersions()});
+      actions.append(restore,del);row.append(text,actions);versionList.appendChild(row);
+    });
+  }
+
+  async function saveNamedVersion(){
+    var project=await requestProject();
+    if(!project)return;
+    var name=String(document.getElementById('versionName').value||'').trim()||('Version '+(namedVersions.length+1));
+    var thumbnail=null;
+    if(desktop&&desktop.captureCurrentSource&&currentSource){
+      try{
+        var size=currentDeviceSize();
+        var shot=await desktop.captureCurrentSource({source:currentSource,width:size.width,height:size.height,css:project.css||cssOut.value});
+        if(shot&&shot.ok)thumbnail=shot.dataUrl;
+      }catch(_){}
+    }
+    namedVersions.push({id:String(Date.now())+'-'+Math.random().toString(36).slice(2,7),name:name,createdAt:new Date().toISOString(),project:project,thumbnail:thumbnail});
+    if(namedVersions.length>20)namedVersions.shift();
+    renderVersions();setStatus('Point de contrôle créé : '+name);
+  }
+
+  function syncTokenInputs(tokens){
+    tokens=tokens||{};
+    if(tokens.spacingUnit!==undefined)document.getElementById('tokenSpacing').value=tokens.spacingUnit;
+    if(tokens.radiusCard!==undefined)document.getElementById('tokenRadius').value=tokens.radiusCard;
+    if(tokens.textTitle!==undefined)document.getElementById('tokenTitle').value=tokens.textTitle;
+    if(tokens.colorPrimary)document.getElementById('tokenPrimary').value=tokens.colorPrimary;
+    if(tokens.colorSurface)document.getElementById('tokenSurface').value=tokens.colorSurface;
+  }
+
+  function tokenPayload(){
+    return {
+      spacingUnit:Number(document.getElementById('tokenSpacing').value)||8,
+      radiusCard:Number(document.getElementById('tokenRadius').value)||12,
+      textTitle:Number(document.getElementById('tokenTitle').value)||20,
+      colorPrimary:document.getElementById('tokenPrimary').value||'#6f49f5',
+      colorSurface:document.getElementById('tokenSurface').value||'#ffffff'
+    };
+  }
+
+  async function captureAllFormats(){
+    if(!desktop||!desktop.captureBatch||!currentSource){setStatus('Captures automatiques disponibles dans l’application Windows.',true);return}
+    var project=await requestProject();
+    var result=await desktop.captureBatch({
+      source:currentSource,
+      css:project&&project.css||cssOut.value,
+      configs:[
+        {name:'telephone-compact',width:360,height:800},
+        {name:'grand-telephone',width:412,height:915},
+        {name:'tablette',width:768,height:1024},
+        {name:'bureau',width:1366,height:768},
+        {name:'tv-full-hd',width:1920,height:1080}
+      ]
+    });
+    if(result&&result.ok)setStatus(result.files.length+' captures enregistrées dans '+result.dir);
+    else if(result&&!result.canceled)setStatus(result.error||'Capture impossible.',true);
+  }
+
+  async function captureCurrentForRegression(){
+    if(!desktop||!desktop.captureCurrentSource||!currentSource)return null;
+    var size=currentDeviceSize();
+    var project=await requestProject();
+    return desktop.captureCurrentSource({source:currentSource,width:size.width,height:size.height,css:project&&project.css||cssOut.value});
+  }
+
+  async function saveRegressionBaseline(){
+    var result=await captureCurrentForRegression();
+    if(!result||!result.ok){regressionStatus.textContent=result&&result.error||'Capture de référence impossible.';return}
+    regressionBaseline=result.dataUrl;
+    regressionStatus.textContent='Référence enregistrée pour '+result.width+' × '+result.height+'.';
+    regressionDiff.classList.remove('visible');
+  }
+
+  async function compareRegression(){
+    if(!regressionBaseline){regressionStatus.textContent='Commence par définir une référence.';return}
+    var current=await captureCurrentForRegression();
+    if(!current||!current.ok){regressionStatus.textContent=current&&current.error||'Capture actuelle impossible.';return}
+    var result=await desktop.compareRegression({baseline:regressionBaseline,current:current.dataUrl});
+    if(!result||!result.ok){regressionStatus.textContent=result&&result.error||'Comparaison impossible.';return}
+    regressionStatus.textContent='Différence visuelle : '+result.differencePercent+' % · '+result.changedPixels+' pixels modifiés.';
+    regressionDiff.src=result.diffDataUrl;regressionDiff.classList.add('visible');
+  }
+
+  async function checkGit(){
+    if(!desktop||!desktop.gitStatus){gitStatusText.textContent='Fonction disponible dans l’application Windows.';return}
+    var result=await desktop.gitStatus({source:currentSource});
+    if(!result||!result.ok){gitStatusText.textContent=result&&result.error||'Git indisponible.';return}
+    gitStatusText.textContent='Branche : '+(result.branch||'—')+' · '+(result.status?'modifications locales détectées':'propre')+(result.ghAvailable?' · GitHub CLI disponible':' · GitHub CLI absent');
+  }
+
+  async function publishGit(){
+    if(!desktop||!desktop.gitPublish){gitStatusText.textContent='Fonction disponible dans l’application Windows.';return}
+    if(!currentSource||['folder','html'].indexOf(currentSource.type)<0){gitStatusText.textContent='Ouvre le dépôt en dossier/fichier HTML local pour publier.';return}
+    gitStatusText.textContent='Préparation du patch puis publication…';
+    if(desktop.applyCssToSource){
+      var project=await requestProject();
+      var applied=await desktop.applyCssToSource({source:currentSource,css:project&&project.css||cssOut.value});
+      if(!applied||!applied.ok){gitStatusText.textContent=applied&&applied.error||'Impossible de préparer le patch local.';return}
+    }
+    var result=await desktop.gitPublish({
+      source:currentSource,
+      branch:document.getElementById('gitBranch').value,
+      title:document.getElementById('gitTitle').value,
+      body:'Modifications visuelles générées avec App Interface Studio 5.'
+    });
+    if(!result||!result.ok){gitStatusText.textContent=result&&result.error||'Publication impossible.';return}
+    gitStatusText.textContent=result.prUrl?'Pull Request créée : '+result.prUrl:'Branche publiée : '+result.branch+'. Ouvre GitHub pour créer la Pull Request.';
+    if(result.prUrl&&desktop.copyText)desktop.copyText(result.prUrl);
+  }
+
+  function requestProject(){
+    return new Promise(function(resolve){
+      projectResolver=resolve;
+      post('get-project');
+      setTimeout(function(){
+        if(projectResolver){
+          projectResolver=null;
+          resolve(null);
+        }
+      },2500);
+    });
+  }
+
+  function projectPrompt(project){
+    return [
+      'Projet d’interface — modifications réalisées dans App Interface Studio.',
+      '',
+      'Applique ces modifications proprement dans le code source de l’application indiquée dans le projet. N’empile pas des rustines CSS : reporte les valeurs dans les règles structurelles pertinentes. Respecte les breakpoints téléphone/tablette/grand écran, les règles Flex/Grid et auto-layout, les contraintes intelligentes, les composants et leurs variantes, les design tokens, l’inspecteur avancé, les animations, les liens de prototype, l’accessibilité, les ancrages, marges, largeurs/hauteurs fluides et safe areas. Pour un projet Android, traduis les intentions vers XML/ConstraintLayout ou Jetpack Compose/WindowInsets. Utilise les diffs source préparés lorsqu’ils existent et préfère les modifications structurelles aux coordonnées d’un seul appareil. Préserve les espaces volontaires. Les éléments masqués doivent conserver leur espace sauf indication contraire.',
+      '',
+      'Données exactes du projet :',
+      JSON.stringify(project,null,2)
+    ].join('\n');
+  }
+
+  function downloadText(name,text,type){
+    var blob=new Blob([text],{type:type||'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=name;a.click();
+    setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  }
+
+  async function saveProject(){
+    var project=await requestProject();
+    if(!project){setStatus('Projet non récupéré.',true);return}
+    project.source=currentSource;
+    project.preview={mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value};
+    project.namedVersions=namedVersions.map(function(v){return {id:v.id,name:v.name,createdAt:v.createdAt,project:v.project,thumbnail:v.thumbnail||null}});
+    project.studio={name:'App Interface Studio',version:'5.0.0'};
+    if(desktop){
+      var result=await desktop.saveProject(project);
+      if(result&&result.ok)setStatus('Projet enregistré : '+result.path);
+    }else{
+      downloadText('interface.app-layout.json',JSON.stringify(project,null,2),'application/json');
+      setStatus('Projet téléchargé.');
+    }
+  }
+
+  async function openProject(){
+    if(!desktop){setStatus('Ouverture native disponible dans le logiciel Windows.',true);return}
+    var result=await desktop.openProject();
+    if(result&&result.ok){
+      var project=result.project||{};
+      if(project.source){
+        var restored=await desktop.restoreSource(project.source);
+        if(!restored||!restored.ok){setStatus(restored&&restored.error?restored.error:'Impossible de retrouver la source.',true);return}
+        await loadSource(restored.source);
+      }
+      if(project.preview){
+        selectedDeviceKind=project.preview.deviceKind||selectedDeviceKind;
+        if(project.preview.preset&&Array.from(preset.options).some(function(o){return o.value===project.preview.preset}))preset.value=project.preview.preset;
+        if(project.preview.size&&preset.value==='custom'){
+          screenCustomW.value=project.preview.size.width||412;screenCustomH.value=project.preview.size.height||915;
+        }
+        if(project.preview.safeProfile)safeProfile.value=project.preview.safeProfile;
+        setDevice();
+      }
+      if(project.environment){
+        document.getElementById('systemFontScale').value=String(project.environment.fontScale||1);
+        document.getElementById('systemDisplayScale').value=String(project.environment.displayScale||1);
+        document.getElementById('systemDarkMode').checked=!!project.environment.darkMode;
+        document.getElementById('systemKeyboard').value=String(project.environment.keyboardHeight||0);
+      }
+      namedVersions=Array.isArray(project.namedVersions)?project.namedVersions:[];
+      renderVersions();
+      if(project.editingBreakpoint&&Array.from(breakpointEdit.options).some(function(o){return o.value===project.editingBreakpoint})){
+        breakpointEdit.value=project.editingBreakpoint;
+      }
+      if(project.viewport&&project.viewport.safeArea&&project.viewport.safeArea.profile){
+        var profile=String(project.viewport.safeArea.profile);
+        if(Array.from(safeProfile.options).some(function(o){return o.value===profile})){
+          safeProfile.value=profile;
+          applySafeArea();
+        }
+      }
+      post('load-project',{project:project});
+      setStatus('Projet ouvert : '+result.path);
+    }else if(result&&result.error)setStatus(result.error,true);
+  }
+
+  async function exportChatGPT(copyOnly){
+    var project=await requestProject();
+    if(!project){setStatus('Projet non récupéré.',true);return}
+    project.source=currentSource;
+    project.preview={mode:currentPreviewMode,deviceKind:selectedDeviceKind,preset:preset.value,size:currentDeviceSize(),safeProfile:safeProfile.value};
+    project.namedVersions=namedVersions.map(function(v){return {id:v.id,name:v.name,createdAt:v.createdAt}});
+    project.studio={name:'App Interface Studio',version:'5.0.0'};
+    var text=projectPrompt(project);
+    if(copyOnly){
+      if(desktop)await desktop.copyText(text);
+      else await navigator.clipboard.writeText(text);
+      setStatus('Projet copié : colle-le directement dans ChatGPT.');
+      return;
+    }
+    if(desktop){
+      var result=await desktop.saveChatGPTExport({project:project,text:text});
+      if(result&&result.ok)setStatus('Export ChatGPT enregistré : '+result.path);
+    }else{
+      downloadText('interface-pour-chatgpt.txt',text,'text/plain');
+      setStatus('Export ChatGPT téléchargé.');
+    }
+  }
+
+  function sendKeyboard(event){
+    var key=event.key;
+    var modifier=event.ctrlKey||event.metaKey;
+    if(modifier&&key.toLowerCase()==='s'){
+      event.preventDefault();saveProject();return;
+    }
+    var tag=(event.target&&event.target.tagName)||'';
+    if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA')return;
+    var relevant=key.indexOf('Arrow')===0||key==='Delete'||key==='Backspace'||(modifier&&(key.toLowerCase()==='z'||key.toLowerCase()==='y'));
+    if(!relevant)return;
+    event.preventDefault();
+    if(modifier&&key.toLowerCase()==='z'){post(event.shiftKey?'redo':'undo');return}
+    if(modifier&&key.toLowerCase()==='y'){post('redo');return}
+    if(key==='Delete'||key==='Backspace'){post('delete');return}
+    var amount=modifier?10:1;
+    if(event.shiftKey){
+      if(key==='ArrowLeft')post('resize',{dw:-amount,dh:0,commit:false});
+      if(key==='ArrowRight')post('resize',{dw:amount,dh:0,commit:false});
+      if(key==='ArrowUp')post('resize',{dw:0,dh:-amount,commit:false});
+      if(key==='ArrowDown')post('resize',{dw:0,dh:amount,commit:false});
+    }else{
+      if(key==='ArrowLeft')post('move',{dx:-amount,dy:0,commit:false});
+      if(key==='ArrowRight')post('move',{dx:amount,dy:0,commit:false});
+      if(key==='ArrowUp')post('move',{dx:0,dy:-amount,commit:false});
+      if(key==='ArrowDown')post('move',{dx:0,dy:amount,commit:false});
+    }
+  }
+  function finishKeyboard(event){
+    if(event.key&&event.key.indexOf('Arrow')===0)post('keyboard-commit');
+  }
+  window.addEventListener('keydown',sendKeyboard,true);
+  window.addEventListener('keyup',finishKeyboard,true);
+
+  window.addEventListener('message',function(event){
+    var multiRec=multiFrameRecord(event.source);
+    if(event.source!==frame.contentWindow&&!multiRec)return;
+    var data=event.data||{};
+    if(data.source!=='app-visual-editor'&&data.source!=='radio-visual-editor')return;
+    var p=data.payload||{};
+
+    if(multiRec&&multiRec!==activeMultiRec){
+      if(data.type==='ready')sendMultiProject(multiRec);
+      return;
+    }
+    if(multiRec===activeMultiRec&&data.type==='ready'){
+      sendMultiProject(multiRec);
+      return;
+    }
+
+    if(data.type==='ready'){
+      post('grid',{grid:Number(grid.value)});
+      post('preferences',{defaultResponsive:prefs.defaultResponsive!==false});
+      applySafeArea();
+      post(currentPreviewMode==='edit'?'enable':'disable');
+      post('environment-set',{
+        fontScale:Number(document.getElementById('systemFontScale').value)||1,
+        displayScale:Number(document.getElementById('systemDisplayScale').value)||1,
+        darkMode:document.getElementById('systemDarkMode').checked,
+        keyboardHeight:Number(document.getElementById('systemKeyboard').value)||0
+      });
+      post('breakpoint-edit',{breakpoint:breakpointEdit.value||'base'});
+      post('get-css');
+      post('get-layers');
+      post('get-components');
+      setStatus('Éditeur prêt.');
+      var waiters=readyWaiters.slice();readyWaiters.length=0;waiters.forEach(function(resolve){resolve(true)});
+    }
+    if(data.type==='history'){
+      undoBtn.disabled=!p.canUndo;
+      redoBtn.disabled=!p.canRedo;
+    }
+    if(data.type==='state'){updateState(p);scheduleMultiSync()}
+    if(data.type==='spacing'){
+      document.getElementById('spaceL').textContent=p.left?Math.round(p.left.gap)+' px':'—';
+      document.getElementById('spaceR').textContent=p.right?Math.round(p.right.gap)+' px':'—';
+      document.getElementById('spaceT').textContent=p.top?Math.round(p.top.gap)+' px':'—';
+      document.getElementById('spaceB').textContent=p.bottom?Math.round(p.bottom.gap)+' px':'—';
+      var q=p.parent||{};
+      function near(v){return v?(Math.round(v.gap)+' px vers '+(v.selector||'objet')):'aucun objet'};
+      document.getElementById('spacingDetail').textContent='Bords les plus proches — gauche : '+near(p.left)+' · haut : '+near(p.top)+' · droite : '+near(p.right)+' · bas : '+near(p.bottom)+'. Marges du parent : '+Math.round(q.left||0)+' / '+Math.round(q.top||0)+' / '+Math.round(q.right||0)+' / '+Math.round(q.bottom||0)+' px.';
+    }
+    if(data.type==='layers')renderLayers(p.tree||[]);
+    if(data.type==='components')renderComponents(p.items||[]);
+    if(data.type==='tokens')syncTokenInputs(p.tokens||{});
+    if(data.type==='prototype')prototypeStatus.textContent='Prototype : '+Object.keys(p.links||{}).length+' lien(s) enregistré(s).';
+    if(data.type==='audit')renderAudit(p);
+    if(data.type==='auto-layout'){
+      autoLayoutStatus.textContent=p.ok?(p.applied?'Auto-layout appliqué : ':'Suggestion : ')+(p.mode||'')+' · '+((p.layout&&p.layout.gap)||''):(p.message||'Analyse impossible.');
+    }
+    if(data.type==='smart-constraints'){
+      responsiveSummary.textContent=p.ok?(p.applied?'Contraintes intelligentes appliquées à ':'Suggestion calculée pour ')+(p.suggestions||[]).length+' objet(s).':(p.message||'Analyse impossible.');
+    }
+    if(data.type==='design-consistency')renderConsistency(p);
+    if(data.type==='repair-suggestions')renderRepairSuggestions(p.items||[]);
+    if(data.type==='repair-preview')setStatus('Aperçu de correction actif. Utilise Annuler l’aperçu ou Appliquer.');
+    if(data.type==='repair-preview-cleared')setStatus('Aperçu de correction annulé.');
+    if(data.type==='audit-fixed'){setStatus((p.count||0)+' correction(s) automatique(s) appliquée(s).');post('get-css')}
+    if(data.type==='stress')setStatus(p.mode==='normal'?'Contenu normal restauré.':'Test de contenu : '+p.mode);
+    if(data.type==='alt-measure'){
+      document.getElementById('spacingDetail').textContent='Alt · '+(p.selector||'objet')+' : horizontal '+Math.round(p.horizontal||0)+' px · vertical '+Math.round(p.vertical||0)+' px.';
+    }
+    if(data.type==='css'&&typeof p.css==='string'){
+      cssOut.value=p.css;
+      if(p.copied)setStatus('CSS copié.');
+      else if(p.downloaded)setStatus('Fichier CSS exporté.');
+    }
+    if(data.type==='project'&&projectResolver){
+      var resolve=projectResolver;projectResolver=null;resolve(p.project||null);
+    }
+    if(data.type==='project-imported')setStatus('Projet appliqué à l’aperçu.');
+  });
+
+  frame.addEventListener('load',function(){
+    setStatus('Application chargée. Initialisation de l’éditeur…');
+  });
+
+  preset.addEventListener('change',function(){
+    selectedDeviceKind=inferDeviceKind();
+    document.querySelectorAll('[data-device-kind]').forEach(function(btn){btn.classList.toggle('active',btn.dataset.deviceKind===selectedDeviceKind)});
+    customDeviceFields.classList.toggle('visible',selectedDeviceKind==='custom');
+    setDevice();
+  });
+  zoom.addEventListener('change',setDevice);
+  safeProfile.addEventListener('change',applySafeArea);
+  screenCustomW.addEventListener('input',function(){customDeviceWidth.value=screenCustomW.value;setDevice()});
+  screenCustomH.addEventListener('input',function(){customDeviceHeight.value=screenCustomH.value;setDevice()});
+  customDeviceWidth.addEventListener('input',function(){screenCustomW.value=customDeviceWidth.value;if(selectedDeviceKind==='custom')setDevice()});
+  customDeviceHeight.addEventListener('input',function(){screenCustomH.value=customDeviceHeight.value;if(selectedDeviceKind==='custom')setDevice()});
+  grid.addEventListener('change',function(){post('grid',{grid:Number(grid.value)})});
+
+  document.getElementById('reloadBtn').addEventListener('click',function(){
+    if(desktop&&desktop.injectEditor)desktop.injectEditor();
+    frame.contentWindow.location.reload();
+  });
+
+  undoBtn.addEventListener('click',function(){post('undo')});
+  redoBtn.addEventListener('click',function(){post('redo')});
+  deleteBtn.addEventListener('click',function(){post('delete')});
+  lockBtn.addEventListener('click',function(){post('lock',{value:lastState?!lastState.locked:true})});
+  document.getElementById('resetBtn').addEventListener('click',function(){post('reset')});
+
+  posX.addEventListener('change',function(){if(hasSelection)post('set-position',{x:Number(posX.value)})});
+  posY.addEventListener('change',function(){if(hasSelection)post('set-position',{y:Number(posY.value)})});
+  sizeW.addEventListener('change',function(){
+    if(!hasSelection)return;
+    post('set-size',keepRatio.checked?{width:Number(sizeW.value),keepRatio:true}:{width:Number(sizeW.value),height:Number(sizeH.value)});
+  });
+  sizeH.addEventListener('change',function(){
+    if(!hasSelection)return;
+    post('set-size',keepRatio.checked?{height:Number(sizeH.value),keepRatio:true}:{width:Number(sizeW.value),height:Number(sizeH.value)});
+  });
+
+  colorText.addEventListener('input',function(){if(hasSelection)post('style',{kind:'color',value:colorText.value})});
+  colorBg.addEventListener('input',function(){if(hasSelection)post('style',{kind:'background',value:colorBg.value})});
+  colorBorder.addEventListener('input',function(){if(hasSelection)post('style',{kind:'border',value:colorBorder.value})});
+  zIndex.addEventListener('change',function(){if(hasSelection)post('z-set',{value:Number(zIndex.value)||0})});
+  document.getElementById('bringFront').addEventListener('click',function(){post('z-change',{delta:1})});
+  document.getElementById('sendBack').addEventListener('click',function(){post('z-change',{delta:-1})});
+
+  document.querySelectorAll('[data-font]').forEach(function(btn){
+    btn.addEventListener('click',function(){post('font-size',{delta:Number(btn.dataset.font)*Number(step.value)})});
+  });
+
+  textContent.addEventListener('change',function(){post('text-content',{value:textContent.value})});
+  fontFamily.addEventListener('change',function(){post('text-style',{kind:'family',value:fontFamily.value})});
+  fontSize.addEventListener('change',function(){post('text-style',{kind:'size',value:Number(fontSize.value)})});
+  boldBtn.addEventListener('click',function(){post('text-style',{kind:'weight',value:(lastState&&(Number(lastState.fontWeight)>=600||String(lastState.fontWeight).toLowerCase()==='bold'))?'400':'700'})});
+  italicBtn.addEventListener('click',function(){post('text-style',{kind:'style',value:(lastState&&lastState.fontStyle==='italic')?'normal':'italic'})});
+  underlineBtn.addEventListener('click',function(){post('text-style',{kind:'decoration',value:(lastState&&String(lastState.textDecoration||'').indexOf('underline')>=0)?'none':'underline'})});
+  document.querySelectorAll('[data-text-align]').forEach(function(btn){
+    btn.addEventListener('click',function(){post('text-style',{kind:'align',value:btn.dataset.textAlign})});
+  });
+  letterSpacing.addEventListener('change',function(){post('text-style',{kind:'letter-spacing',value:Number(letterSpacing.value)+'px'})});
+  lineHeight.addEventListener('change',function(){post('text-style',{kind:'line-height',value:String(Number(lineHeight.value)||1.2)})});
+
+  function responsivePayload(extra){return Object.assign({breakpoint:breakpointEdit.value||'base'},extra||{})}
+  responsiveEnabled.addEventListener('change',function(){if(hasSelection)post('responsive-set',responsivePayload({enabled:responsiveEnabled.checked}))});
+  breakpointEdit.addEventListener('change',function(){post('breakpoint-edit',{breakpoint:breakpointEdit.value})});
+  hAnchor.addEventListener('change',function(){post('responsive-set',responsivePayload({hAnchor:hAnchor.value}))});
+  vAnchor.addEventListener('change',function(){post('responsive-set',responsivePayload({vAnchor:vAnchor.value}))});
+  widthMode.addEventListener('change',function(){post('responsive-set',responsivePayload({widthMode:widthMode.value}))});
+  heightMode.addEventListener('change',function(){post('responsive-set',responsivePayload({heightMode:heightMode.value}))});
+  marginLeft.addEventListener('change',function(){post('responsive-set',responsivePayload({marginLeft:Number(marginLeft.value)||0}))});
+  marginRight.addEventListener('change',function(){post('responsive-set',responsivePayload({marginRight:Number(marginRight.value)||0}))});
+  marginTop.addEventListener('change',function(){post('responsive-set',responsivePayload({marginTop:Number(marginTop.value)||0}))});
+  marginBottom.addEventListener('change',function(){post('responsive-set',responsivePayload({marginBottom:Number(marginBottom.value)||0}))});
+  widthPercent.addEventListener('change',function(){post('responsive-set',responsivePayload({widthPercent:Number(widthPercent.value)||100}))});
+  heightPercent.addEventListener('change',function(){post('responsive-set',responsivePayload({heightPercent:Number(heightPercent.value)||100}))});
+  respectSafeArea.addEventListener('change',function(){post('responsive-set',responsivePayload({safeArea:respectSafeArea.checked}))});
+  document.getElementById('captureResponsive').addEventListener('click',function(){post('responsive-capture')});
+
+  document.querySelectorAll('[data-align]').forEach(function(btn){
+    btn.addEventListener('click',function(){post('align',{mode:btn.dataset.align})});
+  });
+  document.getElementById('measureBtn').addEventListener('click',function(){post('measure-spacing')});
+
+  document.getElementById('rotateDeviceBtn').addEventListener('click',rotateDevice);
+  document.getElementById('multiPreviewBtn').addEventListener('click',openMultiPreview);
+  document.getElementById('multiCloseBtn').addEventListener('click',closeMultiPreview);
+  document.getElementById('multiSyncBtn').addEventListener('click',syncMultiPreview);
+  document.getElementById('refreshLayersBtn').addEventListener('click',function(){post('get-layers')});
+
+  document.getElementById('applyParentLayout').addEventListener('click',function(){
+    post('parent-layout',{
+      display:layoutDisplay.value,
+      flexDirection:layoutFlexDirection.value,
+      justifyContent:layoutJustify.value,
+      alignItems:layoutAlign.value,
+      gap:layoutGap.value||'0px',
+      gridTemplateColumns:layoutColumns.value||'none'
+    });
+    setTimeout(function(){post('get-layers')},100);
+  });
+
+  document.getElementById('suggestAutoLayoutBtn').addEventListener('click',function(){post('auto-layout',{apply:false})});
+  document.getElementById('applyAutoLayoutBtn').addEventListener('click',function(){post('auto-layout',{apply:true})});
+  document.getElementById('suggestConstraintsBtn').addEventListener('click',function(){post('smart-constraints',{apply:false})});
+  document.getElementById('applyConstraintsBtn').addEventListener('click',function(){post('smart-constraints',{apply:true})});
+
+  document.getElementById('applyAdvancedBtn').addEventListener('click',function(){
+    post('advanced-style',{styles:{
+      padding:document.getElementById('advPadding').value.trim(),
+      margin:document.getElementById('advMargin').value.trim(),
+      'border-radius':document.getElementById('advRadius').value.trim(),
+      'box-shadow':document.getElementById('advShadow').value.trim(),
+      opacity:document.getElementById('advOpacity').value.trim(),
+      filter:document.getElementById('advFilter').value.trim(),
+      'aspect-ratio':document.getElementById('advAspect').value.trim(),
+      overflow:document.getElementById('advOverflow').value,
+      'min-width':document.getElementById('advMinWidth').value.trim(),
+      'max-width':document.getElementById('advMaxWidth').value.trim(),
+      position:document.getElementById('advPosition').value,
+      'object-fit':document.getElementById('advObjectFit').value
+    }});
+  });
+
+  document.querySelectorAll('[data-distribute]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      post('distribute',{mode:btn.dataset.distribute,gap:Number(document.getElementById('distributeGap').value)||0});
+      setTimeout(function(){post('measure-spacing')},80);
+    });
+  });
+
+
+  document.getElementById('applyTokensBtn').addEventListener('click',function(){
+    var payload=tokenPayload();
+    post('tokens-set',payload);
+    setStatus('Design tokens appliqués.');
+  });
+  document.querySelectorAll('[data-token-apply]').forEach(function(btn){
+    btn.addEventListener('click',function(){post('token-apply',{kind:btn.dataset.tokenApply})});
+  });
+  document.getElementById('snapToTokenGrid').addEventListener('click',function(){
+    var unit=Math.max(1,Number(document.getElementById('tokenSpacing').value)||8);
+    var option=Array.from(grid.options).find(function(o){return Number(o.value)===unit});
+    if(!option){
+      option=document.createElement('option');option.value=String(unit);option.textContent='Design system · '+unit+' px';grid.appendChild(option);
+    }
+    grid.value=String(unit);post('grid',{grid:unit});setStatus('Accrochage réglé sur '+unit+' px.');
+  });
+
+  document.getElementById('createComponentBtn').addEventListener('click',function(){
+    var name=document.getElementById('componentName').value.trim();
+    if(!name){setStatus('Donne un nom au composant.',true);return}
+    post('component-create',{name:name});
+  });
+  document.getElementById('linkComponentBtn').addEventListener('click',function(){
+    post('component-link',{name:document.getElementById('componentName').value.trim()});
+  });
+  document.getElementById('updateComponentBtn').addEventListener('click',function(){
+    post('component-update',{name:document.getElementById('componentName').value.trim()});
+  });
+  document.getElementById('saveVariantBtn').addEventListener('click',function(){
+    post('component-variant-save',{name:document.getElementById('componentName').value.trim(),variant:document.getElementById('variantName').value.trim()});
+  });
+  document.getElementById('applyVariantBtn').addEventListener('click',function(){
+    post('component-variant-apply',{name:document.getElementById('componentName').value.trim(),variant:document.getElementById('variantName').value.trim(),allInstances:false});
+  });
+  document.getElementById('applyVariantAllBtn').addEventListener('click',function(){
+    post('component-variant-apply',{name:document.getElementById('componentName').value.trim(),variant:document.getElementById('variantName').value.trim(),allInstances:true});
+  });
+
+  document.getElementById('interactiveState').addEventListener('change',function(){post('interactive-state',{state:this.value})});
+  document.getElementById('applyAnimationBtn').addEventListener('click',function(){
+    post('animation-set',{
+      property:document.getElementById('animationProperty').value,
+      duration:Number(document.getElementById('animationDuration').value)||0,
+      easing:document.getElementById('animationEasing').value,
+      delay:0
+    });
+  });
+  document.getElementById('setPrototypeBtn').addEventListener('click',function(){
+    post('prototype-set',{target:document.getElementById('prototypeTarget').value.trim(),trigger:'click'});
+  });
+  document.getElementById('openFlowBtn').addEventListener('click',openFlow);
+
+  document.querySelectorAll('[data-stress]').forEach(function(btn){
+    btn.addEventListener('click',function(){post('stress-test',{mode:btn.dataset.stress})});
+  });
+  document.getElementById('resetStressBtn').addEventListener('click',function(){post('stress-test',{mode:'normal'})});
+  document.getElementById('saveNamedVersionBtn').addEventListener('click',saveNamedVersion);
+
+  document.getElementById('batchCaptureBtn').addEventListener('click',captureAllFormats);
+  document.getElementById('saveBaselineBtn').addEventListener('click',saveRegressionBaseline);
+  document.getElementById('compareRegressionBtn').addEventListener('click',compareRegression);
+  document.getElementById('gitStatusBtn').addEventListener('click',checkGit);
+  document.getElementById('gitPublishBtn').addEventListener('click',publishGit);
+
+  function sendEnvironment(){
+    post('environment-set',{
+      fontScale:Number(document.getElementById('systemFontScale').value)||1,
+      displayScale:Number(document.getElementById('systemDisplayScale').value)||1,
+      darkMode:document.getElementById('systemDarkMode').checked,
+      keyboardHeight:Number(document.getElementById('systemKeyboard').value)||0
+    });
+    scheduleMultiSync();
+  }
+  document.getElementById('systemFontScale').addEventListener('change',sendEnvironment);
+  document.getElementById('systemDisplayScale').addEventListener('change',sendEnvironment);
+  document.getElementById('systemDarkMode').addEventListener('change',sendEnvironment);
+  document.getElementById('systemKeyboard').addEventListener('change',sendEnvironment);
+
+  document.getElementById('auditBtn').addEventListener('click',function(){post('audit')});
+  document.getElementById('auditFixBtn').addEventListener('click',function(){post('audit-fix')});
+  document.getElementById('repairAssistantBtn').addEventListener('click',function(){
+    repairModal.classList.add('visible');post('audit');setTimeout(function(){post('repair-suggest')},80);
+  });
+  document.getElementById('testMatrixBtn').addEventListener('click',runTestMatrix);
+  document.getElementById('consistencyBtn').addEventListener('click',function(){post('design-consistency')});
+  document.getElementById('adbCaptureBtn').addEventListener('click',captureAdbReference);
+  document.getElementById('loadReferenceBtn').addEventListener('click',loadReferenceImage);
+  document.getElementById('referenceOpacity').addEventListener('input',function(){
+    referenceOverlay.style.opacity=String((Number(this.value)||0)/100);
+  });
+  document.getElementById('clearReferenceBtn').addEventListener('click',function(){
+    referenceOverlay.classList.remove('visible');
+    referenceOverlay.removeAttribute('src');
+    compareStatus.textContent='Comparaison retirée.';
+  });
+  document.getElementById('applySourceBtn').addEventListener('click',applyToLocalSource);
+  document.getElementById('prepareDirectEditBtn').addEventListener('click',prepareDirectSourceEdit);
+  document.getElementById('prepareNativeEditBtn').addEventListener('click',prepareNativeEdit);
+
+  document.getElementById('copyBtn').addEventListener('click',function(){post('copy-css')});
+  document.getElementById('downloadBtn').addEventListener('click',function(){post('download-css')});
+
+  ['saveProjectBtn','saveProjectBtn2'].forEach(function(id){var b=document.getElementById(id);if(b)b.addEventListener('click',saveProject)});
+  ['openProjectBtn','openProjectBtn2'].forEach(function(id){var b=document.getElementById(id);if(b)b.addEventListener('click',openProject)});
+  ['exportChatGPTBtn','exportChatGPTBtn2'].forEach(function(id){var b=document.getElementById(id);if(b)b.addEventListener('click',function(){exportChatGPT(false)})});
+  var copyChat=document.getElementById('copyChatGPTBtn');
+  if(copyChat)copyChat.addEventListener('click',function(){exportChatGPT(true)});
+
+
+  function setSourceStatus(message,error){
+    var el=document.getElementById('sourceStatus');
+    if(!el)return;
+    el.textContent=message||'';
+    el.style.color=error?'#a52b4e':'#267557';
+  }
+
+  function waitForReady(timeout){
+    return new Promise(function(resolve){
+      var done=false;
+      var retryTimer=null;
+      var timer=setTimeout(function(){
+        if(done)return;done=true;
+        if(retryTimer)clearInterval(retryTimer);
+        var i=readyWaiters.indexOf(onReady);if(i>=0)readyWaiters.splice(i,1);
+        resolve(false);
+      },timeout||6000);
+      function onReady(){
+        if(done)return;done=true;
+        clearTimeout(timer);
+        if(retryTimer)clearInterval(retryTimer);
+        resolve(true);
+      }
+      readyWaiters.push(onReady);
+
+      if(desktop&&desktop.injectEditor){
+        desktop.injectEditor();
+        retryTimer=setInterval(function(){
+          if(!done)desktop.injectEditor();
+        },300);
+      }
+    });
+  }
+
+  async function loadSource(source){
+    if(!source||!source.url)return false;
+    await closeMultiPreview();
+    currentSource=source;
+    pendingDirectDiff=null;pendingNativeDiff=null;pendingDiffKind=null;
+    await setPreviewMode('edit');
+    document.getElementById('sourceName').textContent=source.label||source.url||'Application';
+    document.getElementById('sourceModal').hidden=true;
+    selector.textContent='Chargement de l’application…';
+    cssOut.value='/* Aucun ajustement. */';
+    directSourceStatus.textContent=source.type==='android-project'
+      ? 'Projet Android natif : utilise le panneau Android natif pour modifier XML/Compose avec diff.'
+      : (['folder','html'].indexOf(source.type)>=0?'Sélectionne un objet puis prépare le diff de sa vraie règle CSS.':'L’édition source directe nécessite une source locale.');
+    frame.src=source.url;
+    var ready=await waitForReady(8000);
+    if(!ready)setStatus('Application chargée, mais le moteur d’édition n’a pas répondu. Clique sur Recharger pour relancer l’injection.',true);
+    else setStatus(source.type==='android-project'?'Projet Android natif chargé : sélection visuelle + édition source XML/Compose.':'Éditeur prêt : clique directement sur un élément de l’application.');
+    await refreshNativeTree();
+    return ready;
+  }
+
+  async function chooseUrl(){
+    if(!desktop)return;
+    var input=document.getElementById('sourceUrlInput');
+    setSourceStatus('Ouverture…');
+    var result=await desktop.openUrl(input.value);
+    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    else if(result&&result.error)setSourceStatus(result.error,true);
+  }
+
+  async function chooseFolder(){
+    if(!desktop)return;
+    setSourceStatus('Ouverture du dossier…');
+    var result=await desktop.pickFolder();
+    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    else if(result&&result.error)setSourceStatus(result.error,true);
+  }
+
+  async function chooseHtml(){
+    if(!desktop)return;
+    setSourceStatus('Ouverture du fichier…');
+    var result=await desktop.pickHtml();
+    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+    else if(result&&result.error)setSourceStatus(result.error,true);
+  }
+
+  async function chooseDemo(){
+    if(!desktop)return;
+    var result=await desktop.openDemo();
+    if(result&&result.ok){setSourceStatus('');await loadSource(result.source)}
+  }
+
+  document.querySelectorAll('[data-device-kind]').forEach(function(btn){
+    btn.addEventListener('click',function(){applyDeviceKind(btn.dataset.deviceKind)});
+  });
+
+  document.querySelectorAll('[data-preview-mode]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(!currentSource){setStatus('Ouvre d’abord une application.',true);return}
+      setPreviewMode(btn.dataset.previewMode);
+    });
+  });
+
+  document.getElementById('openAsAppBtn').addEventListener('click',openAsApp);
+  previewExit.addEventListener('click',function(){setPreviewMode('edit')});
+  window.addEventListener('keydown',function(event){
+    if(event.key==='Escape'&&currentPreviewMode!=='edit'){
+      event.preventDefault();event.stopImmediatePropagation();setPreviewMode('edit');
+    }
+  },true);
+  window.addEventListener('resize',function(){
+    if(currentPreviewMode!=='edit')setDevice();
+    multiFrames.forEach(fitMultiRecord);
+  });
+
+  function refreshAndroidClock(){
+    var d=new Date();
+    var el=document.getElementById('androidClock');
+    if(el)el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  refreshAndroidClock();setInterval(refreshAndroidClock,30000);
+
+  loadPrefs();
+  applyPrefs();
+  initializeCards();
+
+  document.getElementById('settingsBtn').addEventListener('click',function(){settingsModal.hidden=false});
+  document.getElementById('settingsCloseBtn').addEventListener('click',function(){settingsModal.hidden=true});
+  document.getElementById('settingsDoneBtn').addEventListener('click',function(){settingsModal.hidden=true});
+  uiFontScale.addEventListener('input',function(){
+    prefs.fontScale=Number(uiFontScale.value)||100;
+    uiFontScaleValue.textContent=String(prefs.fontScale);
+    applyPrefs();savePrefs();
+  });
+  uiDensity.addEventListener('change',function(){prefs.density=uiDensity.value;applyPrefs();savePrefs()});
+  uiAnimations.addEventListener('change',function(){prefs.animations=uiAnimations.checked;applyPrefs();savePrefs()});
+  defaultResponsivePref.addEventListener('change',function(){prefs.defaultResponsive=defaultResponsivePref.checked;applyPrefs();savePrefs()});
+  rememberPanels.addEventListener('change',function(){
+    prefs.rememberPanels=rememberPanels.checked;
+    if(!prefs.rememberPanels)prefs.openPanels=[];
+    else syncOpenPanels();
+    savePrefs();
+  });
+  document.getElementById('resetUiSettings').addEventListener('click',function(){
+    prefs=Object.assign({},defaultPrefs);
+    savePrefs();applyPrefs();
+    document.querySelectorAll('.side > .card').forEach(function(card){
+      card.classList.add('collapsed');
+      var h=card.querySelector(':scope > h2');if(h)h.setAttribute('aria-expanded','false');
+    });
+  });
+
+  var sourceModal=document.getElementById('sourceModal');
+  var changeSource=document.getElementById('changeSourceBtn');
+  if(changeSource)changeSource.addEventListener('click',function(){sourceModal.hidden=false});
+  document.getElementById('sourceCloseBtn').addEventListener('click',function(){if(currentSource)sourceModal.hidden=true});
+  document.getElementById('openUrlBtn').addEventListener('click',chooseUrl);
+  document.getElementById('sourceUrlInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();chooseUrl()}});
+  document.getElementById('openFolderBtn').addEventListener('click',chooseFolder);
+  document.getElementById('openHtmlBtn').addEventListener('click',chooseHtml);
+  document.getElementById('openDemoBtn').addEventListener('click',chooseDemo);
+
+  applyDeviceKind('smartphone');
+
+  if(desktop&&desktop.isDesktop){
+    sourceModal.hidden=false;
+  }else{
+    currentSource={type:'bundled-demo',label:'Radio intelligente — démo',url:'/?visual-editor=1'};
+    document.getElementById('sourceName').textContent=currentSource.label;
+    frame.src=currentSource.url;
+  }
+
+  setDevice();
+})();
+</script>
+</body>
+</html>

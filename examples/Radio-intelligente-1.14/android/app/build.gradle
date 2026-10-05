@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.radiointelligente'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.radiointelligente'
+        minSdk 23
+        targetSdk 35
+        versionCode 114
+        versionName '1.14'
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ''
+            versionNameSuffix ''
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    sourceSets { main.assets.srcDirs = ['../../assets'] }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
