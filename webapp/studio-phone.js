@@ -17,6 +17,7 @@
  let refreshing=false;
  async function refresh(){
   if(refreshing)return;refreshing=true;const button=root.querySelector('[data-phone-refresh]');button.disabled=true;
+  let updateSerial='';
   try{
    const select=root.querySelector('[data-phone-device]'),previous=select.value;
    let deviceError='';status('Recherche des téléphones USB…');let devices;try{devices=await call('status');}catch(e){deviceError=e.message;devices={devices:[]};}select.replaceChildren();
@@ -30,9 +31,9 @@
    const serial=select.value;
    if(!serial){status(deviceError?'Éditeur actualisé. Téléphone indisponible : '+deviceError:'Éditeur actualisé. Branchez le téléphone puis cliquez Actualiser pour installer la même version.');return;}
    if(!source.apkProject&&!source.runtimeApkId){status('Éditeur actualisé. Pour le téléphone, ouvrez l’APK publié du projet.');return;}
-   status('Installation de la dernière version sur le téléphone…');await disconnect();await call('connect',{serial});await call('update-source',{source});await connect(serial);
+   updateSerial=serial;status('Installation de la dernière version sur le téléphone…');await disconnect();await call('connect',{serial});await call('update-source',{source});await connect(serial);
    status('Éditeur et téléphone actualisés avec la même version.');
-  }catch(e){status('Actualisation interrompue : '+e.message);}finally{refreshing=false;button.disabled=false;}
+  }catch(e){if(updateSerial)await connect(updateSerial).catch(()=>{});status('Actualisation interrompue : '+e.message);}finally{refreshing=false;button.disabled=false;}
  }
  async function connect(serial){await disconnect();const token=epoch;status('Connexion à l’écran réel…');try{await call('connect',{serial});if(token!==epoch)return;active=true;await capture(token);if(!active||token!==epoch)return;mode='video';if(!window.VideoDecoder){await fallback();return;}await call('video-start',{quality:'native'});if(active&&token===epoch&&mode==='video')status('Écran réel · vidéo à la résolution du téléphone');}catch(e){if(active&&token===epoch)await fallback(e.message);else status(e.message);}}
  function point(e){const r=canvas.getBoundingClientRect();return {x:Math.min(canvas.width-1,Math.max(0,Math.round((e.clientX-r.left)*canvas.width/r.width))),y:Math.min(canvas.height-1,Math.max(0,Math.round((e.clientY-r.top)*canvas.height/r.height)))};}
