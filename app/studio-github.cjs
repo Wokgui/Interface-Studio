@@ -1,4 +1,26 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 function parse(value){let u;try{u=new URL(value.includes('://')?value:'https://github.com/'+value);}catch{throw Error('Coller un lien GitHub, par exemple https://github.com/Wokgui/L4D2.');}const parts=u.pathname.replace(/\.git\/?$/,'').split('/').filter(Boolean);if(u.protocol!=='https:'||u.hostname!=='github.com'||u.username||u.password||parts.length<2||!parts.slice(0,2).every(v=>/^[\w.-]+$/.test(v)))throw Error('Lien de dépôt GitHub invalide.');let branch='';if(parts[2]==='tree'&&parts[3])branch=decodeURIComponent(parts.slice(3).join('/'));else if(parts.length>2)throw Error('Utiliser le lien du dépôt ou de sa branche.');return {owner:parts[0],repo:parts[1],branch};}
 async function download(value,destination,notify=()=>{}){const info=parse(value),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),240000);let directory='';try{const meta=await fetch('https://api.github.com/repos/'+info.owner+'/'+info.repo,{signal:controller.signal,headers:{Accept:'application/vnd.github+json'}});if(!meta.ok)throw Error(meta.status===404?'Dépôt introuvable ou privé. Ouvrir sa copie locale avec Dossier local.':'GitHub indisponible : réessayer plus tard.');const repository=await meta.json();const branch=info.branch||repository.default_branch;if(!branch)throw Error('Ce dépôt ne contient pas de branche.');fs.mkdirSync(destination,{recursive:true});directory=fs.mkdtempSync(path.join(destination,info.repo+'-'));const zipFile=path.join(directory,'.download.zip'),staging=path.join(directory,'.extract');fs.mkdirSync(staging);const response=await fetch('https://codeload.github.com/'+info.owner+'/'+info.repo+'/zip/'+encodeURIComponent(branch),{signal:controller.signal});if(!response.ok||!response.body)throw Error('Archive GitHub indisponible.');const size=Number(response.headers.get('content-length'))||0;if(size>1024**3)throw Error('Dépôt trop volumineux (limite 1 Go).');let received=0;const handle=await fs.promises.open(zipFile,'wx');try{for await(const chunk of response.body){received+=chunk.length;if(received>1024**3)throw Error('Dépôt trop volumineux (limite 1 Go).');await handle.write(chunk);notify({received,total:size});}}finally{await handle.close();}await require('./android-runtime.cjs').extract(zipFile,staging,{maxBytes:2*1024**3,maxEntries:50000});const folders=fs.readdirSync(staging);if(folders.length!==1||!fs.statSync(path.join(staging,folders[0])).isDirectory())throw Error('Structure de dépôt inattendue.');const root=path.join(directory,'projet');fs.renameSync(path.join(staging,folders[0]),root);fs.rmSync(staging,{recursive:true,force:true});fs.unlinkSync(zipFile);return {root,github:{repository:info.owner+'/'+info.repo,branch,url:repository.html_url},bytes:received};}catch(e){if(directory)fs.rmSync(directory,{recursive:true,force:true});throw e;}finally{clearTimeout(timeout);}}
-module.exports={parse,download};
+function repositoryFor(source){
+ const repository=source?.github?.repository || (source?.apkProject?.package==='app.radiointelligente'?'Wokgui/Radio-intelligente':'');
+ if(!/^[\w.-]+\/[\w.-]+$/.test(repository))throw Error('Ouvrez le projet depuis GitHub pour récupérer ses mises à jour.');
+ return repository;
+}
+async function latestApk(repository,destination){
+ parse(repository);
+ const response=await fetch('https://api.github.com/repos/'+repository+'/releases/latest',{signal:AbortSignal.timeout(30000),headers:{Accept:'application/vnd.github+json'}});
+ if(!response.ok)throw Error('Aucun APK publié pour ce projet (HTTP '+response.status+'). La compilation peut être en cours.');
+ const release=await response.json(),assets=release.assets.filter(a=>/\.apk$/i.test(a.name));
+ if(assets.length!==1)throw Error('La dernière publication doit contenir un seul APK pour une actualisation automatique sans ambiguïté.');
+ const asset=assets[0];if(asset.size>1024**3)throw Error('APK trop volumineux.');
+ const url=new URL(asset.browser_download_url);if(url.protocol!=='https:'||url.hostname!=='github.com'||!url.pathname.startsWith('/'+repository+'/releases/download/'))throw Error('Adresse APK invalide.');
+ fs.mkdirSync(destination,{recursive:true});const file=path.join(destination,String(asset.id)+'.apk');
+ const crypto=require('crypto'),digest=asset.digest;
+ const verify=bytes=>{if(digest?.startsWith('sha256:')&&crypto.createHash('sha256').update(bytes).digest('hex')!==digest.slice(7))throw Error('Empreinte APK invalide.');};
+ if(fs.existsSync(file)){verify(fs.readFileSync(file));return {file,release:release.tag_name,assetId:asset.id};}
+ const download=await fetch(url,{signal:AbortSignal.timeout(180000)});if(!download.ok||!download.body)throw Error('Téléchargement APK impossible.');
+ const temporary=file+'.tmp-'+crypto.randomUUID();let received=0;const handle=await fs.promises.open(temporary,'wx');
+ try{for await(const chunk of download.body){received+=chunk.length;if(received>1024**3)throw Error('APK trop volumineux.');await handle.write(chunk);}await handle.close();const bytes=fs.readFileSync(temporary);if(bytes.length!==asset.size)throw Error('APK incomplet.');verify(bytes);fs.renameSync(temporary,file);}catch(e){await handle.close().catch(()=>{});fs.rmSync(temporary,{force:true});throw e;}
+ return {file,release:release.tag_name,assetId:asset.id};
+}
+module.exports={parse,download,repositoryFor,latestApk};
