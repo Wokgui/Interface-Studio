@@ -1,4 +1,4 @@
-# Interface Studio 6.93.0
+# Interface Studio 6.94.0
 
 ## Écran réel intégré
 
@@ -8,7 +8,11 @@ Branchez le téléphone en USB, activez les Options pour les développeurs puis 
 
 Lorsque le décodage vidéo est disponible, la vidéo H.264 utilise la résolution du téléphone et s’ajuste au panneau sans agrandissement automatique. Le zoom 100 % permet d’inspecter les pixels avec défilement. Si la vidéo échoue, le panneau utilise des captures PNG directes. Les clics, glissements, Retour, Accueil et Lecture/pause pilotent le téléphone. La saisie au clavier est limitée aux caractères latins simples ; pour les accents, utilisez le clavier du téléphone affiché dans le panneau. L’audio reste sur le téléphone.
 
-Cette vue montre l’application installée sur le téléphone, pas les modifications non installées du projet. Les modifications restent à construire et installer pour être visibles sur le téléphone. La simulation locale reste indépendante et peut tester les autres formats.
+## Actualiser le projet et le téléphone
+
+Recharger (barre du haut) et Actualiser (Téléphone réel) récupèrent les mises à jour du projet lié à GitHub. Pour un APK, Studio télécharge l’unique APK de la dernière publication, ouvre ses ressources dans l’éditeur puis installe ce même fichier sur le téléphone USB sélectionné. Radio intelligente est reconnue par son identifiant Android ; les autres applications utilisent le dépôt lié au projet. Les anciens dossiers de travail restent conservés.
+
+Sans téléphone, seul l’éditeur est actualisé. Une compilation en cours, une publication sans APK, une incompatibilité de signature ou un échec d’installation sont signalés. Studio ne désinstalle pas l’application et n’efface pas ses données. Les APK reconstruits localement doivent encore être exportés ; la synchronisation GitHub récupère les versions publiées.
 
 Validation : tests de disposition à 2/3/4 panneaux, flux Android réel en émulateur sans fenêtre, commandes réelles, résolution native et captures PNG comparées pixel par pixel. Le moteur de la fenêtre d’édition actuelle ne fournit pas VideoDecoder : le mode PNG est donc utilisé et il est moins fluide qu’une vidéo. Aucun téléphone physique Samsung n’était connecté pendant ces tests.
 
