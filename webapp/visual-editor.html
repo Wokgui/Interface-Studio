@@ -6015,7 +6015,7 @@ body.desktop .desktop-badge{display:inline-flex}
     if(source.phone?.profile)applyAndroidGeometry(source.phone.profile,'Mesures du téléphone');
     pendingDirectDiff=null;pendingNativeDiff=null;pendingDiffKind=null;
     await setPreviewMode('edit');
-    document.getElementById('sourceName').textContent=source.label||source.url||'Application';
+    document.getElementById('sourceName').textContent=(source.label||source.url||'Application')+(source.apkProject?.versionName?' · version '+source.apkProject.versionName:'');
     document.getElementById('sourceModal').hidden=true;
     selector.textContent='Chargement de l’application…';
     cssOut.value='/* Aucun ajustement. */';
@@ -6028,7 +6028,7 @@ body.desktop .desktop-badge{display:inline-flex}
     directSourceStatus.textContent=source.type==='android-project'
       ? 'Projet Android natif : utilise le panneau Android natif pour modifier XML/Compose avec diff.'
       : (['folder','html'].indexOf(source.type)>=0?'Sélectionne un objet puis prépare le diff de sa vraie règle CSS.':'L’édition source directe nécessite une source locale.');
-    var editorUrl=new URL(source.url,location.href);editorUrl.searchParams.set('visual-editor','1');frame.src=editorUrl.href;
+    var editorUrl=new URL(source.url,location.href);editorUrl.searchParams.set('visual-editor','1');editorUrl.searchParams.set('__ais_device','1');frame.src=editorUrl.href;
     var ready=source.type==='apk-runtime-only'?true:await waitForReady(8000);
     if(!ready)setStatus('Application chargée, mais le moteur d’édition n’a pas répondu. Clique sur Recharger pour relancer l’injection.',true);
     else setStatus(source.type==='android-project'?'Projet Android natif chargé : sélection visuelle + édition source XML/Compose.':'Éditeur prêt : clique directement sur un élément de l’application.');
@@ -6213,7 +6213,6 @@ body.desktop .desktop-badge{display:inline-flex}
 <script>document.addEventListener('DOMContentLoaded',()=>{document.getElementById('openAndroidLabBtn').onclick=()=>window.AppInterfaceStudio?.openAndroidLab();document.getElementById('openApkBtn').onclick=()=>window.dispatchEvent(new Event('studio-open-apk'))});</script><script src="apk-editor-ui.js"></script><script src="android-screen-calibration.js"></script><script src="studio-chatgpt.js"></script>
 <script src="studio-formats.js"></script>
 <script src="studio-application.js"></script>
-<script src="studio-native-simulation.js"></script>
 <script src="studio-workspace.js"></script>
 <script src="studio-interface.js"></script>
 <script src="studio-commands.js"></script>

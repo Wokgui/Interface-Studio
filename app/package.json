@@ -1,6 +1,6 @@
 {
   "name": "app-interface-studio",
-  "version": "6.90.0",
+  "version": "6.91.0",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
@@ -17,9 +17,10 @@
     "predist:win": "npm run setup:runtime",
     "test:screens": "node scripts/test-screen-profiles.cjs",
     "test:creation": "node scripts/test-create-project.cjs",
-    "test:native": "node scripts/test-native-simulation.cjs",
+    "test:native": "node scripts/test-real-comparison.cjs",
     "test:github": "node scripts/test-github-project.cjs",
-    "test:interface": "node scripts/test-interface.cjs && node scripts/test-chat-persistence.cjs"
+    "test:interface": "node scripts/test-interface.cjs && node scripts/test-chat-persistence.cjs",
+    "test:local": "node scripts/test-local-apk.cjs"
   },
   "devDependencies": {
     "agent-browser": "^0.38.2",

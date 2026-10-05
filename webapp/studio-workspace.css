@@ -104,3 +104,6 @@ body.studio-layout .side :is(.tool,.btn){white-space:normal;overflow-wrap:anywhe
 .studio-simulation-screen #studioSimulationFrame{position:absolute;border:0}
 
 .studio-system-navigation{pointer-events:auto;user-select:none}
+
+.studio-simulation-screen[data-navigation="gesture"] .studio-system-navigation{background:transparent}
+.studio-simulation-screen[data-navigation="gesture"] .studio-system-navigation::after{background:#666}

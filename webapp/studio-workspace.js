@@ -29,16 +29,15 @@
   const screen = simulation.querySelector('.studio-simulation-screen');
   const holder = simulation.querySelector('.studio-simulation-holder');
  const statusBar=document.createElement('div');statusBar.className='studio-system-status';statusBar.innerHTML='<span>12:00</span><span>4G ▰</span>';const navigationBar=document.createElement('div');navigationBar.className='studio-system-navigation';navigationBar.setAttribute('aria-label','Barre système Android simulée');screen.append(statusBar,navigationBar);
- const runtimeChoice=document.createElement('div');runtimeChoice.className='studio-runtime-choice';runtimeChoice.hidden=true;runtimeChoice.innerHTML='<button class="btn" id="studioLocalRuntime">Simulation locale</button><button class="btn" id="studioNativeRuntime">Vérifier sur Android</button><span>Application exécutée localement · sans émulateur</span>';area.before(runtimeChoice);let nativeMode=false;
+ let nativeMode=false;
  function nativeOnly(s){return ['android-project','apk-runtime-only'].includes(s?.type)}
- function useNative(value){nativeMode=nativeOnly(source)||!!value;holder.hidden=nativeMode;runtimeChoice.querySelector('span').textContent=nativeMode?'Vérification Android · retour local disponible pendant le démarrage':'Application exécutée localement · sans émulateur';document.getElementById('studioReloadSimulation').disabled=nativeMode;window.StudioNativeSimulation?.setSource(source,area,nativeMode);fit();}
- document.getElementById('studioLocalRuntime').onclick=()=>useNative(false);document.getElementById('studioNativeRuntime').onclick=()=>useNative(true);
+ function useNative(){nativeMode=false;holder.hidden=nativeOnly(source);window.StudioNativeSimulation?.setSource(null,area,false);fit();}
  function simulationProfile(){const p=currentProfile(),mobile=['smartphone','tablet'].includes(p.kind);const value=id=>Number(document.getElementById(id)?.value)||0;return {simulateAndroid:mobile,mode:mobile?'android':'preview',topInset:mobile?value('androidTopInset'):0,bottomInset:mobile?value('androidBottomInset'):0,leftInset:mobile?value('androidLeftInset'):0,rightInset:mobile?value('androidRightInset'):0,systemBarsLayout:document.getElementById('androidBarsLayout')?.value||'overlay',navigationMode:document.getElementById('androidNavigationMode')?.value||'three-button'};}
  function fitBars(){const p=simulationProfile();statusBar.hidden=navigationBar.hidden=!p.simulateAndroid;screen.dataset.bars=p.systemBarsLayout;screen.dataset.navigation=p.navigationMode;screen.style.setProperty('--sim-top',p.topInset+'px');screen.style.setProperty('--sim-bottom',p.bottomInset+'px');screen.style.setProperty('--sim-left',p.leftInset+'px');screen.style.setProperty('--sim-right',p.rightInset+'px');statusBar.firstElementChild.textContent=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});navigationBar.textContent=p.navigationMode==='gesture'?'':'Ⅲ　　▢　　‹';const inset=p.simulateAndroid&&p.systemBarsLayout==='inset';Object.assign(iframe.style,{top:inset?p.topInset+'px':'0px',left:inset?p.leftInset+'px':'0px',width:inset?'calc(100% - '+(p.leftInset+p.rightInset)+'px)':'100%',height:inset?'calc(100% - '+(p.topInset+p.bottomInset)+'px)':'100%'});send('window-profile',p);}
  document.addEventListener('change',e=>{if(['androidBarsLayout','androidNavigationMode','androidTopInset','androidBottomInset','androidLeftInset','androidRightInset'].includes(e.target.id))fit();});
   const nativeNotice=document.createElement('div');nativeNotice.className='studio-native-notice';nativeNotice.hidden=true;
-  nativeNotice.innerHTML='<b>Exécution Android nécessaire</b><p>Le format de cette application est détecté. Ses interactions, ses photos et son diaporama nécessitent Android. L’aperçu des ressources dans l’Éditeur ne fait pas tourner son code natif.</p><button class="btn">Ouvrir les outils Android</button>';
-  area.append(nativeNotice);nativeNotice.querySelector('button').onclick=()=>window.AppInterfaceStudio?.openAndroidLab();
+  nativeNotice.innerHTML='<b>Simulation locale indisponible pour ce fichier</b><p>Ce projet contient uniquement du code Android natif. Il ne possède pas de version web exécutable sur le PC. Ouvrez ses sources web pour utiliser la simulation locale. Les ressources restent consultables dans l’Éditeur.</p>';
+  area.append(nativeNotice);
   let source = null, mode = 'editor', selecting = false, lastSelection = null;
   const screenSelect=document.getElementById('studioScreenProfile'), screenInfo=document.getElementById('studioScreenInfo');
   const profiles={compact:{width:360,height:640,kind:'smartphone'},phone390:{width:390,height:844,kind:'smartphone'},phone:{width:412,height:915,kind:'smartphone'},phone430:{width:430,height:932,kind:'smartphone'},fold:{width:768,height:1024,kind:'smartphone'},tablet:{width:768,height:1024,kind:'tablet'},tv:{width:1920,height:1080,kind:'tv'},desktop:{width:1366,height:768,kind:'desktop'}};
@@ -141,10 +140,12 @@
 
   document.getElementById('studioSelectElement').onclick=e=>{selecting=!selecting;e.target.classList.toggle('active',selecting);e.target.textContent=selecting?'Interagir':'Sélectionner';send('inspect',{active:selecting});window.StudioNativeSimulation?.setInspect(selecting);};
   document.getElementById('studioReloadSimulation').onclick=()=>{iframe.contentWindow?.location.reload();};
+  let applicationView=null;
   function setSource(next) {
+    applicationView=null;
     source=next;
-    const native=nativeOnly(next);nativeMode=native;runtimeChoice.hidden=!next?.apkProject||native;nativeNotice.hidden=true;holder.hidden=native;document.getElementById('studioSelectElement').disabled=false;document.getElementById('studioReloadSimulation').disabled=native;
-    window.StudioNativeSimulation?.setSource(next,area,native);
+    const native=nativeOnly(next);nativeMode=false;nativeNotice.hidden=!native;holder.hidden=native;document.getElementById('studioSelectElement').disabled=false;document.getElementById('studioReloadSimulation').disabled=native;
+    window.StudioNativeSimulation?.setSource(null,area,false);
     sourceKey=next?.path?(next.path+'|'+(next.entry||'')):next?.url||'';
     const saved=projectProfiles[sourceKey];screenSelect.value=typeof saved==='string'?saved:saved?.mode||'auto';if(!screenSelect.value)screenSelect.value='auto';
     screenSelect.querySelector('option[value="responsive"]').disabled=native;if(native&&screenSelect.value==='responsive')screenSelect.value='auto';
@@ -160,6 +161,12 @@
   iframe.addEventListener('load',()=>{send('inspect',{active:selecting});if(lastSelection)send('selection',lastSelection);fit();});
   window.addEventListener('message',e=>{
     const d=e.data;
+    const editorWindow=document.getElementById('appFrame')?.contentWindow;
+    if(d?.source==='ais-application-view'){
+      if(e.source===iframe.contentWindow&&d.type==='surface'){applicationView=d.payload;editorWindow?.postMessage({source:'ais-application-view-host',payload:applicationView},'*');}
+      else if(e.source===editorWindow&&d.type==='ready'&&applicationView)editorWindow.postMessage({source:'ais-application-view-host',payload:applicationView},'*');
+      return;
+    }
     if(e.source===iframe.contentWindow && d?.source==='ais-simulation'){
       if(d.type==='screen-profile'&&validProfile(d.payload)&&!source?.nativePreviewProfile&&!source?.phone?.profile&&!source?.studioProject){detectedProfile=d.payload;fit();}
       if(d.type==='selection'){lastSelection=d.payload;window.StudioHost?.select(d.payload.selector);window.StudioChatGpt?.setSelection?.(d.payload);}
@@ -169,7 +176,7 @@
       if(d.type==='css'){send('css',{css:d.payload?.css||''});}
     }
   });
-  window.StudioWorkspace={setSource,fit,movePane,getPaneOrder:()=>order.slice(),setNativeSelection:p=>{lastSelection=p;},useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();window.StudioNativeSimulation?.resize(currentProfile());},setMode(next){mode=next;render();},getSimulationProfile:simulationProfile,isNativeMode:()=>nativeMode,returnToLocal(message){if(nativeOnly(source))return false;useNative(false);runtimeChoice.querySelector('span').textContent='Vérification Android interrompue · simulation locale rétablie. '+String(message).split('\n')[0];return true;},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
+  window.StudioWorkspace={setSource,fit,movePane,getPaneOrder:()=>order.slice(),setNativeSelection:p=>{lastSelection=p;},useScreenProfile(p){if(!validProfile(p))return;customProfile={width:Number(p.width),height:Number(p.height),kind:p.kind||'smartphone'};rotated=false;screenSelect.value='custom';document.getElementById('studioScreenW').value=p.width;document.getElementById('studioScreenH').value=p.height;document.getElementById('studioCustomScreen').hidden=false;saveScreen();fit();window.StudioNativeSimulation?.resize(currentProfile());},setMode(next){mode=next;render();},getSimulationProfile:simulationProfile,isNativeMode:()=>nativeMode,returnToLocal(){if(nativeOnly(source))return false;useNative();return true;},getSource:()=>source,getSelection:()=>lastSelection,getScreenProfile:()=>({...currentProfile(),mode:screenSelect.value})};
   screenSelect.addEventListener('change',()=>window.StudioNativeSimulation?.resize(currentProfile()));
   document.getElementById('studioRotateScreen').addEventListener('click',()=>window.StudioNativeSimulation?.resize(currentProfile()));
   document.getElementById('studioApplyScreen').addEventListener('click',()=>window.StudioNativeSimulation?.resize(currentProfile()));

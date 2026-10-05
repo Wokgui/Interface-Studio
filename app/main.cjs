@@ -237,7 +237,7 @@ async function injectEditorIntoFrame(frame){
   if(!frame || !mainWindow || frame === mainWindow.webContents.mainFrame)return false;
   if(!frame.url || frame.url==='about:blank')return false;
   if(frame.name==='aisSimulation'){
-    try {const config=await mainWindow.webContents.executeJavaScript('({profile:window.StudioWorkspace?.getSimulationProfile?.(),source:window.StudioWorkspace?.getSource?.()})');await applyPreviewProfileToFrame(frame,config.profile?.simulateAndroid?androidRuntimeProfile(config.source,config.profile):{...config.profile,mode:'preview'});await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'simulation-runtime.js'),'utf8'));return true;}catch{return false;}
+    try {const config=await mainWindow.webContents.executeJavaScript('({profile:window.StudioWorkspace?.getSimulationProfile?.(),source:window.StudioWorkspace?.getSource?.()})');await applyPreviewProfileToFrame(frame,config.profile?.simulateAndroid?androidRuntimeProfile(config.source,config.profile):{...config.profile,mode:'preview'});await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'simulation-runtime.js'),'utf8'));await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'studio-application-view.js'),'utf8'));return true;}catch{return false;}
   }
   try{
     const assets=editorAssets();
@@ -253,6 +253,7 @@ async function injectEditorIntoFrame(frame){
     );
     await frame.executeJavaScript(assets.js);
     await applyPreviewProfileToFrame(frame,editorPreviewProfile);
+    await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'studio-application-view.js'),'utf8'));
     injectedFrames.add(frame.routingId);
     return true;
   }catch(error){
@@ -4186,7 +4187,7 @@ async function openApkFile(file){
  try{const p=await apkEditor.importApk(file);const assets=path.join(p.decoded,'assets');const candidates=['index.html','public/index.html','www/index.html','web/index.html'];const entry=candidates.find(f=>fs.existsSync(path.join(assets,f)));let source;
  if(entry){const url=await startLocalTarget(assets,entry);source={type:'folder',path:assets,entry,url,label:p.label+' · APK éditable'}}else{const android=detectAndroidProject(p.decoded);const preview=await buildAndroidPreview(android);source={type:'android-project',path:p.decoded,url:preview.url,label:p.label+' · APK décodé',nativeKind:preview.nativeKind,nativeFile:preview.nativeFile,nativePreviewProfile:preview.nativePreviewProfile,nativeScreens:preview.nativeScreens}}
  try{const policy=JSON.parse(fs.readFileSync(path.join(assets,'android-window-profile.json'),'utf8'));if(policy.schema===1&&['inset','overlay'].includes(policy.systemBarsLayout))source.androidWindowProfile=policy}catch{}
- const targetSdk=Number(fs.readFileSync(path.join(p.decoded,'apktool.yml'),'utf8').match(/targetSdkVersion:\s*['"]?(\d+)/)?.[1])||null;source.androidTargetSdk=targetSdk;source.apkProject={id:p.id,package:p.package,label:p.label};source.previewFidelity='resources';return {ok:true,source};
+ const targetSdk=Number(fs.readFileSync(path.join(p.decoded,'apktool.yml'),'utf8').match(/targetSdkVersion:\s*['"]?(\d+)/)?.[1])||null;source.androidTargetSdk=targetSdk;source.apkProject={id:p.id,package:p.package,label:p.label,versionName:p.versionName,versionCode:p.versionCode};source.previewFidelity='resources';return {ok:true,source};
  }catch(error){if(path.extname(file).toLowerCase()==='.apk'&&fs.existsSync(file)){const id=crypto.randomUUID();runtimeApks.set(id,fs.realpathSync(file));return {ok:true,source:{type:'apk-runtime-only',url:'about:blank',label:path.basename(file),runtimeApkId:id,editError:String(error.message)}}}return {ok:false,error:String(error.message)}}
 }
 ipcMain.handle('apk:command',async(event,p)=>{if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine APK refusée'};try{return {ok:true,...await apkEditor.command(p?.action,p?.payload)}}catch(e){return {ok:false,error:e.message}}});

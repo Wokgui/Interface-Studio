@@ -1,4 +1,16 @@
-# Interface Studio 6.90.0
+# Interface Studio 6.91.0
+
+## Nouveautés 6.91
+
+- Une seule Simulation locale pour les applications web et les APK web, directement dans Studio. Suppression du choix local/Android et du panneau vidéo Android de cette vue : aucun démarrage d’émulateur, aucune fenêtre supplémentaire, aucun écran noir.
+- Le panneau exécute les fichiers de l’application importée, avec ses interactions et son stockage local. Les barres Android restent simulées en superposition ou avec espace réservé, selon le format choisi ; un chevauchement présent dans l’application reste visible.
+- L’Éditeur suit le passage Radio / Ma musique effectué dans la Simulation, en utilisant les commandes originales de l’application. Les votes et la lecture ne sont pas rejoués.
+- Version interne de l’APK affichée dans le nom du projet. Viewport du périphérique appliqué également lors du chargement de l’Éditeur.
+- Vérification de Radio intelligente v110 sur Android API 35 et en local : écrans Radio et Ma musique, navigation identifiée sur Android, dimensions et position du menu inférieur comparées. Tests de lecture/pause, Oui/Non persistants, sélection ChatGPT et dispositions à deux/trois panneaux.
+- Les APK contenant uniquement du code Android natif affichent une explication de leur absence de runtime web local ; aucun faux écran interactif ou lancement automatique.
+
+Les titres, fichiers personnels et préférences du téléphone ne sont pas copiés automatiquement sur le PC. La vérification Android mesure le même APK et deux écrans à 412 × 915 ; elle ne prouve pas une identité parfaite avec chaque modèle de téléphone ou chaque version de WebView.
+
 
 ## Nouveautés 6.90
 
