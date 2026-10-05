@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('AppInterfaceStudio', {
   apkCommand: (action,payload) => ipcRenderer.invoke('apk:command',{action,payload}),
   openApk: () => ipcRenderer.invoke('android:open',{pickApk:true}),
   openAndroidLab: options => ipcRenderer.invoke('android:open',options||{}),
-  androidCommand:(action,payload={})=>{if(!['status','prepare-plan','prepare-install','run-source','resize','key','pointer','frame','hierarchy','import-media','video-start','video-stop','stop','cancel-start','logs'].includes(action))return Promise.reject(Error('Action Android refusée'));return ipcRenderer.invoke('android:'+action,payload);},
+  androidCommand:(action,payload={})=>{if(!['status','connect','text','prepare-plan','prepare-install','run-source','resize','key','pointer','frame','hierarchy','import-media','video-start','video-stop','stop','cancel-start','logs'].includes(action))return Promise.reject(Error('Action Android refusée'));return ipcRenderer.invoke('android:'+action,payload);},
   onAndroidProgress:fn=>{const handler=(_event,p)=>fn(p);ipcRenderer.on('android:progress',handler);return ()=>ipcRenderer.removeListener('android:progress',handler);},
   onAndroidVideo:callback=>{const packet=(_event,p)=>{try{callback({type:'packet',...p})}finally{ipcRenderer.send('android:video-ack',{id:p.id,sequence:p.sequence})}};const state=(_event,p)=>callback({type:'state',...p});ipcRenderer.on('android:video-packet',packet);ipcRenderer.on('android:video-state',state);return ()=>{ipcRenderer.removeListener('android:video-packet',packet);ipcRenderer.removeListener('android:video-state',state)};},
   onChatGptAccount: fn=>{ipcRenderer.on('chatgpt:account-status',(_e,p)=>fn(p))},

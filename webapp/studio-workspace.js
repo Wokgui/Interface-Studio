@@ -23,7 +23,11 @@
   simulation.insertAdjacentHTML('beforeend', '<div class="studio-simulation-area"><div class="studio-simulation-holder"><div class="studio-simulation-screen"><iframe id="studioSimulationFrame" name="aisSimulation" title="Application en exécution" allow="autoplay; fullscreen; clipboard-read; clipboard-write"></iframe></div></div></div>');
   const chat = document.createElement('section'); chat.id = 'studioPane-chat'; chat.className = 'studio-pane studio-chat-slot';
   main.prepend(editor, simulation, chat);
-  const frames = { editor, simulation, chat };
+  const phone = pane('phone', 'Téléphone réel', '');
+  main.append(phone);
+  toolbar.querySelector('[data-pane="chat"]').closest('label').insertAdjacentHTML('afterend','<label><input type="checkbox" data-pane="phone"> Téléphone réel</label>');
+  window.StudioPhone?.mount(phone);
+  const frames = { editor, simulation, chat, phone };
   const iframe = document.getElementById('studioSimulationFrame');
   const area = simulation.querySelector('.studio-simulation-area');
   const screen = simulation.querySelector('.studio-simulation-screen');
@@ -79,6 +83,7 @@
     }
     window.StudioHost?.fitEditor();
     window.StudioChatGpt?.refreshBounds?.();
+    window.StudioPhone?.fit();
   }
   function columns() {
     main.style.gridTemplateColumns = weights.map(w => `minmax(0,${w}fr)`).join(' 8px ');
@@ -135,6 +140,7 @@
   for(const [id,el] of Object.entries(frames)){const bar=el.querySelector('.studio-pane-bar');if(!bar)continue;const controls=document.createElement('span');controls.className='studio-pane-order';for(const [delta,text] of [[-1,'←'],[1,'→']]){const b=document.createElement('button');b.className='btn';b.textContent=text;b.title='Déplacer '+(delta<0?'à gauche':'à droite');b.onclick=()=>movePane(id,delta);controls.append(b);}bar.append(controls);}
   toolbar.insertAdjacentHTML('beforeend','<label>Ordre <select id="studioPaneOrder" aria-label="Panneau à déplacer"><option value="editor">Éditeur</option><option value="simulation">Simulation</option><option value="chat">ChatGPT</option></select></label><button class="btn" id="studioPaneLeft">← Gauche</button><button class="btn" id="studioPaneRight">Droite →</button>');
   document.getElementById('studioPaneLeft').onclick=()=>movePane(document.getElementById('studioPaneOrder').value,-1);
+  document.getElementById('studioPaneOrder').insertAdjacentHTML('beforeend','<option value="phone">Téléphone réel</option>');
   document.getElementById('studioPaneRight').onclick=()=>movePane(document.getElementById('studioPaneOrder').value,1);
   for(const [id,el] of Object.entries(frames)){el.draggable=false;const bar=el.querySelector('.studio-pane-bar');if(!bar)continue;bar.draggable=true;bar.addEventListener('dragstart',e=>e.dataTransfer.setData('application/x-studio-pane',id));el.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('application/x-studio-pane'))e.preventDefault();});el.addEventListener('drop',e=>{const from=e.dataTransfer.getData('application/x-studio-pane');if(!frames[from]||from===id)return;e.preventDefault();order.splice(order.indexOf(from),1);order.splice(order.indexOf(id),0,from);persist();render();});}
 

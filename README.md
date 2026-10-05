@@ -1,4 +1,16 @@
-# Interface Studio 6.92.0
+# Interface Studio 6.93.0
+
+## Écran réel intégré
+
+Dans **Côte à côte → Panneaux**, activez **Téléphone réel**. Les quatre panneaux disponibles sont Éditeur, Simulation locale, ChatGPT et Téléphone réel. Ils restent sur une seule ligne avec des séparateurs réglables.
+
+Branchez le téléphone en USB, activez les Options pour les développeurs puis le débogage USB et acceptez l’autorisation sur son écran. Cliquez Actualiser, choisissez le téléphone et Connecter. Ouvrez l’application sur le téléphone : Studio affiche directement son écran, ses données et ses barres Android. Aucune fenêtre externe ni installation de Radio ne sont nécessaires.
+
+Lorsque le décodage vidéo est disponible, la vidéo H.264 utilise la résolution du téléphone et s’ajuste au panneau sans agrandissement automatique. Le zoom 100 % permet d’inspecter les pixels avec défilement. Si la vidéo échoue, le panneau utilise des captures PNG directes. Les clics, glissements, Retour, Accueil et Lecture/pause pilotent le téléphone. La saisie au clavier est limitée aux caractères latins simples ; pour les accents, utilisez le clavier du téléphone affiché dans le panneau. L’audio reste sur le téléphone.
+
+Cette vue montre l’application installée sur le téléphone, pas les modifications non installées du projet. Les modifications restent à construire et installer pour être visibles sur le téléphone. La simulation locale reste indépendante et peut tester les autres formats.
+
+Validation : tests de disposition à 2/3/4 panneaux, flux Android réel en émulateur sans fenêtre, commandes réelles, résolution native et captures PNG comparées pixel par pixel. Le moteur de la fenêtre d’édition actuelle ne fournit pas VideoDecoder : le mode PNG est donc utilisé et il est moins fluide qu’une vidéo. Aucun téléphone physique Samsung n’était connecté pendant ces tests.
 
 ## Nouveautés 6.92
 

@@ -14,7 +14,7 @@ const tick=()=>new Promise(r=>setTimeout(r,60));
  assert(w.StudioWorkspace);assert(w.StudioCommands);assert.equal(d.documentElement.style.getPropertyValue('--ui-font-scale'),'1.3');
  assert.equal(d.getElementById('uiFontScale').value,'130');
  w.StudioWorkspace.setMode('split');w.StudioWorkspace.movePane('simulation',-1);
- assert.deepEqual(Array.from(w.StudioWorkspace.getPaneOrder()),['simulation','editor','chat']);assert.equal(d.getElementById('studioPane-simulation').style.gridColumn,'1');assert.equal(d.getElementById('studioPane-editor').style.gridColumn,'3');
+ assert.deepEqual(Array.from(w.StudioWorkspace.getPaneOrder()),['simulation','editor','chat','phone']);assert.equal(d.getElementById('studioPane-simulation').style.gridColumn,'1');assert.equal(d.getElementById('studioPane-editor').style.gridColumn,'3');
  assert.equal(JSON.parse(w.localStorage.getItem('ais-workspace-v681')).order[0],'simulation');
  d.getElementById('studioEditorTools').click();assert(d.body.classList.contains('editor-tools-open'));assert(d.querySelector('#studioPane-editor .side'));d.querySelector('.studio-tools-head button').click();assert(!d.body.classList.contains('editor-tools-open'));
  assert(d.querySelectorAll('.studio-tool-category').length>=4);assert(!d.querySelector('.side > .card'));assert.equal(d.querySelectorAll('.top-actions .studio-action-group').length,5);
