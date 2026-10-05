@@ -8,7 +8,7 @@ concurrency:
   group: interface-studio-windows
   cancel-in-progress: true
 permissions:
-  contents: write
+  contents: read
 jobs:
   windows:
     runs-on: windows-latest
@@ -31,9 +31,3 @@ jobs:
           name: Interface-Studio-Windows
           path: app/dist/*.exe
           if-no-files-found: error
-      - name: Publish Windows application
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "studio-${{ github.run_number }}" dist/*.exe --target "${{ github.sha }}" --title "Interface Studio 6.94" --notes "Actualisation du projet dans l’éditeur et sur le téléphone USB." --latest
