@@ -5570,6 +5570,8 @@ body.desktop .desktop-badge{display:inline-flex}
   });
 
   document.getElementById('reloadBtn').addEventListener('click',function(){
+    const current=window.StudioWorkspace?.getSource?.();
+    if(window.StudioPhone&&desktop?.refreshProject&&(current?.github?.repository||current?.apkProject?.package==='app.radiointelligente')){window.StudioPhone.refresh();return;}
     if(desktop&&desktop.injectEditor)desktop.injectEditor();
     frame.contentWindow.location.reload();
   });
