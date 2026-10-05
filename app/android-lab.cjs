@@ -53,6 +53,16 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  });
  on('cancel-start',async()=>{if(pendingStart)pendingStart.cancelled=true;return {canceled:!!pendingStart};});
  on('connect',async p=>{await video.stop();serial=String(p.serial);await device();return {serial};});
+ mutations.add('update-source');
+ on('update-source',async p=>{
+  await device();if(serial.startsWith('emulator-'))throw Error('Choisir un téléphone réel pour cette actualisation.');
+  const file=resolveApk(p.source,true),info=await inspect(file);
+  if(p.source?.apkProject?.package&&info.package!==p.source.apkProject.package)throw Error('Package APK incohérent.');
+  await selectApk(file);
+  const installed=await operations.get('install')({});
+  await adb(['-s',serial,'shell','am','force-stop',info.package]);await launchCurrent();
+  return {...installed,updated:true};
+ });
  on('install',async()=>{await device();if(!selected)throw new Error('Sélectionner un APK.');const current=await inspect(selected.stagedFile);if(current.hash!==selected.hash)throw new Error('Le fichier APK a changé : le sélectionner à nouveau.');const supported=(await adb(['-s',serial,'shell','getprop','ro.product.cpu.abilist'])).trim().split(',');const native=[...selected.abis.matchAll(/'([^']+)'/g)].map(m=>m[1]);if(native.length&&!native.some(abi=>supported.includes(abi)))throw new Error('Architecture incompatible : APK '+native.join(', ')+' ; appareil '+supported.join(', '));const api=Number((await adb(['-s',serial,'shell','getprop','ro.build.version.sdk'])).trim());if(Number(selected.minApi)>api)throw new Error('API Android '+api+' insuffisante : APK exige '+selected.minApi);const result=await run(tool('platform-tools/adb.exe'),['-s',serial,'install','-r',selected.stagedFile],120000);if(!/Success/.test(result))throw new Error(result);packageName=selected.package;const featureText=await adb(['-s',serial,'shell','pm','list','features']);const missing=selected.requiredFeatures.filter(feature=>!featureText.includes('feature:'+feature));return {message:result+(missing.length?'\nFonctions matérielles à vérifier : '+missing.join(', '):''),package:packageName,warnings:missing};});
  async function launchCurrent(){await device();if(!packageName)throw new Error('Installer l’APK sélectionné avant de lancer.');let component='';for(const category of ['android.intent.category.LEANBACK_LAUNCHER','android.intent.category.LAUNCHER']){const r=await adb(['-s',serial,'shell','cmd','package','resolve-activity','--brief','-a','android.intent.action.MAIN','-c',category,packageName]);component=r.split(/\r?\n/).find(s=>/^[\w.$]+\/[\w.$]+$/.test(s.trim()))?.trim()||'';if(component)break}if(!component)throw new Error('Aucune activité téléphone/TV lançable.');const result=await adb(['-s',serial,'shell','am','start','-W','-n',component]);if(/Error:|Exception/.test(result))throw new Error(result);return {message:result};}
  on('launch',launchCurrent);
