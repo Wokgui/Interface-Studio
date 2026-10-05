@@ -19,7 +19,7 @@
   if(refreshing)return;refreshing=true;const button=root.querySelector('[data-phone-refresh]');button.disabled=true;
   try{
    const select=root.querySelector('[data-phone-device]'),previous=select.value;
-   status('Recherche des téléphones USB…');const devices=await call('status');select.replaceChildren();
+   let deviceError='';status('Recherche des téléphones USB…');let devices;try{devices=await call('status');}catch(e){deviceError=e.message;devices={devices:[]};}select.replaceChildren();
    for(const serial of devices.devices.filter(s=>!s.startsWith('emulator-'))){const o=document.createElement('option');o.value=o.textContent=serial;select.append(o);}if([...select.options].some(o=>o.value===previous))select.value=previous;
    let source=window.StudioWorkspace?.getSource?.();
    const linked=source?.github?.repository||source?.apkProject?.package==='app.radiointelligente';
@@ -28,7 +28,7 @@
    source=result.source;
    if(!result.unchanged)await window.StudioHost.loadSource(source);
    const serial=select.value;
-   if(!serial){status('Éditeur actualisé. Branchez le téléphone puis cliquez Actualiser pour installer la même version.');return;}
+   if(!serial){status(deviceError?'Éditeur actualisé. Téléphone indisponible : '+deviceError:'Éditeur actualisé. Branchez le téléphone puis cliquez Actualiser pour installer la même version.');return;}
    if(!source.apkProject&&!source.runtimeApkId){status('Éditeur actualisé. Pour le téléphone, ouvrez l’APK publié du projet.');return;}
    status('Installation de la dernière version sur le téléphone…');await disconnect();await call('connect',{serial});await call('update-source',{source});await connect(serial);
    status('Éditeur et téléphone actualisés avec la même version.');

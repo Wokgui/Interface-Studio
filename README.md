@@ -1,4 +1,8 @@
-# Interface Studio 6.94.0
+# Interface Studio 6.95.0
+
+## Nouveautés 6.95
+
+Une erreur de recherche USB ne bloque plus la récupération des mises à jour dans l’éditeur. L’état du téléphone est signalé séparément après l’actualisation du projet.
 
 ## Écran réel intégré
 
