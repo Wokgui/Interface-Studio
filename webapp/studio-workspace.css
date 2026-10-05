@@ -93,3 +93,14 @@ body.studio-layout .studio-chat-panel.docked #studioChatSite[hidden]{display:non
 body.studio-layout .studio-action-group>div{align-items:center}
 body.studio-layout .side :is(.toolbar,.settings-actions,.pro-grid,.align-grid,.smart-actions){justify-content:center;text-align:center}
 body.studio-layout .side :is(.tool,.btn){white-space:normal;overflow-wrap:anywhere;padding:7px;min-height:40px;height:auto}
+
+.studio-runtime-choice{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:#fff;border-bottom:1px solid #e5dfec;font-size:12px;flex:none}.studio-runtime-choice[hidden]{display:none}
+.studio-system-status,.studio-system-navigation{position:absolute;left:0;right:0;z-index:20;pointer-events:none;color:#fff;box-sizing:border-box}
+.studio-system-status{top:0;height:var(--sim-top);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font:600 12px system-ui;background:transparent}
+.studio-system-navigation{bottom:0;height:var(--sim-bottom);display:flex;align-items:center;justify-content:center;font:22px system-ui;background:rgba(0,0,0,.78)}
+.studio-system-status[hidden],.studio-system-navigation[hidden]{display:none}
+.studio-simulation-screen[data-bars="inset"] .studio-system-status{background:#111}
+.studio-simulation-screen[data-navigation="gesture"] .studio-system-navigation::after{content:"";width:34%;height:4px;max-width:110px;background:#fff;border-radius:999px}
+.studio-simulation-screen #studioSimulationFrame{position:absolute;border:0}
+
+.studio-system-navigation{pointer-events:auto;user-select:none}

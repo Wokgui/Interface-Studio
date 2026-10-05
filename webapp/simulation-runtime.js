@@ -8,22 +8,20 @@
   // Saved HTML/APK snapshots can show a track while their boot script resets cur.
   // Rehydrate that track from the real catalogue and renew expired preview URLs.
   if(typeof jp==='function' && typeof cur!=='undefined' && document.getElementById('audio') && document.getElementById('play')){
-    const audio=document.getElementById('audio'), play=document.getElementById('play');
-    const original=play.onclick;
-    play.onclick=async function(event){
-      if(!cur && audio.getAttribute('src')){
-        const title=document.getElementById('title')?.textContent.trim();
-        const artist=document.getElementById('artist')?.textContent.split(' — ')[0].trim();
-        if(title&&artist){
-          try{
-            const result=await jp('https://api.deezer.com/search?q='+encodeURIComponent(artist+' '+title)+'&limit=30');
-            const track=result.data?.find(t=>t.title?.toLowerCase()===title.toLowerCase()&&t.artist?.name?.toLowerCase()===artist.toLowerCase());
-            if(track?.preview){const category=typeof L==='object'?Object.entries(L).find(([,v])=>document.getElementById('cat')?.textContent.trim().endsWith(v))?.[0]:null;cur={id:track.id,title:track.title,artist:track.artist.name,album:track.album?.title||'',cover:track.album?.cover_big||'',preview:track.preview,category:category||'piano',source:'deezer',externalUrl:track.link};show();}
-          }catch(error){emit('error',{message:'Actualisation du morceau : '+error.message});}
-        }
-      }
-      return original?.call(this,event);
-    };
+    const audio=document.getElementById('audio');let restoring=null;
+    const remember=()=>{try{if(cur)localStorage.setItem('ais-radio-current-v1',JSON.stringify(cur));else if(!audio.getAttribute('src'))localStorage.removeItem('ais-radio-current-v1')}catch{}};
+    async function restoreCurrent(){
+      if(cur){remember();return true;}if(restoring)return restoring;
+      restoring=(async()=>{if(!audio.getAttribute('src'))return false;const title=document.getElementById('title')?.textContent.trim(),artist=document.getElementById('artist')?.textContent.split(' — ')[0].trim();if(!title||!artist)return false;
+        let saved;try{saved=JSON.parse(localStorage.getItem('ais-radio-current-v1')||'null')}catch{}
+        if(saved?.title&&saved?.artist&&saved.id&&saved.preview)cur=saved;
+        else {const result=await jp('https://api.deezer.com/search?q='+encodeURIComponent(artist+' '+title)+'&limit=30');const track=result.data?.find(t=>t.title?.toLowerCase()===title.toLowerCase()&&t.artist?.name?.toLowerCase()===artist.toLowerCase());if(!track?.preview)throw Error('Le morceau affiché n’est pas disponible dans le catalogue.');const category=typeof L==='object'?Object.entries(L).find(([,v])=>document.getElementById('cat')?.textContent.trim().endsWith(v))?.[0]:null;cur={id:track.id,title:track.title,artist:track.artist.name,album:track.album?.title||'',cover:track.album?.cover_big||'',preview:track.preview,category:category||'piano',source:'deezer',externalUrl:track.link};}
+        show();if(typeof enable==='function')enable(true);remember();return true;
+      })();try{return await restoring;}finally{restoring=null;}
+    }
+    for(const id of ['play','miniPlay','yes','no','like','lessStyle','lessArtist','block']){const button=document.getElementById(id),original=button?.onclick;if(original)button.onclick=async function(event){try{await restoreCurrent();const result=await original.call(this,event);remember();return result;}catch(error){emit('error',{message:error.message});const status=document.getElementById('status');if(status)status.textContent=error.message;}};}
+    new MutationObserver(remember).observe(document.getElementById('title'),{childList:true});
+    restoreCurrent().catch(error=>emit('error',{message:error.message}));
     const nativePlay=HTMLMediaElement.prototype.play;
     HTMLMediaElement.prototype.play=async function(){
       if(this!==audio)return nativePlay.call(this);
@@ -56,6 +54,7 @@
   window.addEventListener('message',e=>{
     if(e.source!==parent||e.data?.source!=='ais-simulation-host')return;
     const {type,payload}=e.data;
+    if(type==='window-profile'){window.__APP_INTERFACE_STUDIO_RUNTIME__={...window.__APP_INTERFACE_STUDIO_RUNTIME__,...payload};const original=window.__AIS_ORIGINAL_UA__||navigator.userAgent;const chrome=original.match(/Chrome\/([\d.]+)/)?.[1]||'126.0.0.0';try{Object.defineProperty(navigator,'userAgent',{configurable:true,get:()=>payload.simulateAndroid?'Mozilla/5.0 (Linux; Android 16; SM-S918B; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/'+chrome+' Mobile Safari/537.36':original})}catch{}for(const side of ['top','bottom','left','right'])document.documentElement.style.setProperty('--ais-safe-'+side,(payload[side+'Inset']||0)+'px');}
     if(type==='inspect'){inspecting=!!payload.active;document.documentElement.style.cursor=inspecting?'crosshair':'';}
     if(type==='selection'){try{selected=document.querySelector(payload.selector);highlight();}catch{}}
     if(type==='css'){let s=document.getElementById('ais-simulation-css');if(!s){s=document.createElement('style');s.id='ais-simulation-css';document.head.append(s);}s.textContent=payload.css;}

@@ -1,4 +1,16 @@
-# Interface Studio 6.87.0
+# Interface Studio 6.88.0
+
+## Nouveautés 6.88
+
+Les APK contenant une application web, dont Radio intelligente v110, utilisent désormais le runtime local par défaut. « Simulation » et « Ouvrir comme appli » exécutent les mêmes fichiers, avec les mêmes services, données locales et réglages de barres. Le démarrage d’Android ne bloque plus leur utilisation.
+
+- Barres système Android superposées au contenu, ou contenu entre les barres, selon le réglage choisi. Les trois boutons et les gestes sont représentés ; une application couverte par la barre conserve ce défaut visible.
+- Le morceau affiché dans un ancien instantané Radio est relié au vrai morceau du catalogue avant lecture ou vote. Les commandes de Radio restent ses commandes originales ; les choix Oui/Non persistent après rechargement.
+- « Vérifier sur Android » reste disponible. « Simulation locale » permet de revenir immédiatement au runtime web, même pendant un démarrage Android.
+- Les applications entièrement natives nécessitent toujours Android ; un runtime web ne remplace pas leurs composants matériels ou leurs services natifs.
+
+Validation : APK v110 réellement importé, lecture et pause, Oui/Non et rechargement, cinq formats, barres superposées et réservées, gestes, sélection synchronisée, fenêtre détachée et retour local pendant un démarrage indisponible. Les panneaux et outils adaptatifs de 6.87 sont conservés.
+
 
 ## Nouveautés 6.87
 

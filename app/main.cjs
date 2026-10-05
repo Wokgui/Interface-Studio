@@ -237,7 +237,7 @@ async function injectEditorIntoFrame(frame){
   if(!frame || !mainWindow || frame === mainWindow.webContents.mainFrame)return false;
   if(!frame.url || frame.url==='about:blank')return false;
   if(frame.name==='aisSimulation'){
-    try {await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'simulation-runtime.js'),'utf8'));return true;}catch{return false;}
+    try {const config=await mainWindow.webContents.executeJavaScript('({profile:window.StudioWorkspace?.getSimulationProfile?.(),source:window.StudioWorkspace?.getSource?.()})');await applyPreviewProfileToFrame(frame,config.profile?.simulateAndroid?androidRuntimeProfile(config.source,config.profile):{...config.profile,mode:'preview'});await frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'simulation-runtime.js'),'utf8'));return true;}catch{return false;}
   }
   try{
     const assets=editorAssets();
@@ -478,7 +478,7 @@ function openAsAppWindow(payload){
       };
 
   const runtimeUrl=new URL(studioBaseUrl+'/app-runtime.html');
-  runtimeUrl.searchParams.set('target',target);
+  const localTarget=new URL(target);localTarget.searchParams.delete('visual-editor');localTarget.searchParams.set('__ais_simulation','1');runtimeUrl.searchParams.set('target',localTarget.href);
   runtimeUrl.searchParams.set('screenWidth',String(width));runtimeUrl.searchParams.set('screenHeight',String(height));
   runtimeUrl.searchParams.set('mode',android?'android':'preview');
   runtimeUrl.searchParams.set('bars',profile.systemBarsLayout||'overlay');runtimeUrl.searchParams.set('navigation',profile.navigationMode||'three-button');
@@ -528,7 +528,7 @@ function openAsAppWindow(payload){
     if(isMainFrame)return;
     try{
       const frame=webFrameMain.fromId(processId,routingId);
-      if(frame)applyPreviewProfileToFrame(frame,profile);
+      if(frame)applyPreviewProfileToFrame(frame,profile).then(()=>frame.executeJavaScript(fs.readFileSync(path.join(webRoot(),'simulation-runtime.js'),'utf8'))).catch(()=>{});
     }catch(_){}
   });
   win.on('closed',()=>previewWindows.delete(win));

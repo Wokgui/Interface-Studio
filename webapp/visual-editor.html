@@ -2356,7 +2356,7 @@ body.desktop .desktop-badge{display:inline-flex}
       width:size.width,
       height:size.height,
       androidExact:useAndroid,
-      profile:useAndroid?Object.assign({},previewProfile(),androidInsets()):previewProfile()
+      profile:useAndroid?Object.assign({},previewProfile(),androidInsets(),window.StudioWorkspace?.getSimulationProfile?.()||{}):previewProfile()
     });
     if(result&&result.ok)setStatus('Fenêtre application ouverte en '+result.width+' × '+result.height+(result.androidExact?' · Simulation Android':'')+'.');
     else if(result&&result.error)setStatus(result.error,true);
@@ -6010,7 +6010,7 @@ body.desktop .desktop-badge{display:inline-flex}
     currentSource=source;window.StudioApplication?.setSource(source);window.StudioWorkspace?.setSource(source);window.StudioChatGpt?.setSource(source);document.getElementById('realApkBtn').hidden=!(source.apkProject||source.runtimeApkId);var gate=document.getElementById('nativeRenderGate');gate.hidden=!(source.runtimeApkId||source.type==='android-project');gate.style.display=gate.hidden?'none':'flex';document.getElementById('nativeResourcesBtn').hidden=!!source.runtimeApkId;document.getElementById('nativeRenderStatus').textContent=source.editError?'Ressources non éditables : '+source.editError:'Les ressources XML restent accessibles, mais cet aperçu ne constitue pas le rendu Android.';window.ApkEditorUi?.setProject(source.apkProject);
     if(source.androidWindowProfile)document.getElementById('androidBarsLayout').value=source.androidWindowProfile.systemBarsLayout;else if(source.apkProject&&source.androidTargetSdk>=35)document.getElementById('androidBarsLayout').value='overlay';
     document.getElementById('openAsAppBtn').textContent='Ouvrir comme appli';
-    document.getElementById('sourceFidelity').textContent=source.apkProject?'Éditeur : ressources web, sans la fenêtre Android. Simulation : APK exécuté sur Android avec ses barres système.':source.type==='bundled-demo'?'Démo locale : version et données différentes du téléphone':'Source locale ouverte. Calibrer les dimensions pour correspondre à votre appareil.';
+    document.getElementById('sourceFidelity').textContent=source.apkProject?'Éditeur : ressources web, sans la fenêtre Android. Simulation locale : application web exécutée avec ses barres système. Vérification Android facultative.':source.type==='bundled-demo'?'Démo locale : version et données différentes du téléphone':'Source locale ouverte. Calibrer les dimensions pour correspondre à votre appareil.';
     if(source.nativePreviewProfile){var np=source.nativePreviewProfile;preset.value='custom';screenCustomW.value=np.width;screenCustomH.value=np.height;zoom.value='fit';selectedDeviceKind=np.deviceKind||'custom';document.getElementById('androidTopInset').value=np.topInset;document.getElementById('androidBottomInset').value=np.bottomInset;document.getElementById('androidLeftInset').value=np.leftInset||0;document.getElementById('androidRightInset').value=np.rightInset||0;document.getElementById('androidBarsLayout').value='inset';setDevice();document.getElementById('sourceFidelity').textContent='Aperçu des ressources XML : orientation et style importés. Les photos personnelles et les changements calculés par le code nécessitent Android réel.';}
     if(source.phone?.profile)applyAndroidGeometry(source.phone.profile,'Mesures du téléphone');
     pendingDirectDiff=null;pendingNativeDiff=null;pendingDiffKind=null;
