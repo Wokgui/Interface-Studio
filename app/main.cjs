@@ -4190,6 +4190,23 @@ async function openApkFile(file){
  const targetSdk=Number(fs.readFileSync(path.join(p.decoded,'apktool.yml'),'utf8').match(/targetSdkVersion:\s*['"]?(\d+)/)?.[1])||null;source.androidTargetSdk=targetSdk;source.apkProject={id:p.id,package:p.package,label:p.label,versionName:p.versionName,versionCode:p.versionCode};source.previewFidelity='resources';return {ok:true,source};
  }catch(error){if(path.extname(file).toLowerCase()==='.apk'&&fs.existsSync(file)){const id=crypto.randomUUID();runtimeApks.set(id,fs.realpathSync(file));return {ok:true,source:{type:'apk-runtime-only',url:'about:blank',label:path.basename(file),runtimeApkId:id,editError:String(error.message)}}}return {ok:false,error:String(error.message)}}
 }
+let projectRefreshBusy=false;
+ipcMain.handle('source:refresh',async(event,source)=>{
+ if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine refusée.'};
+ if(projectRefreshBusy)return {ok:false,error:'Actualisation déjà en cours.'};projectRefreshBusy=true;
+ try{
+  const github=require('./studio-github.cjs'),repository=github.repositoryFor(source);
+  if(source.apkProject||source.runtimeApkId){
+   const latest=await github.latestApk(repository,path.join(app.getPath('userData'),'project-updates'));
+   if(source.githubAssetId===latest.assetId)return {ok:true,source,unchanged:true};
+   const result=await openApkFile(latest.file);if(!result.ok)throw Error(result.error);
+   if(source.apkProject&&result.source.apkProject&&source.apkProject.package!==result.source.apkProject.package)throw Error('La publication APK appartient à une autre application.');
+   result.source.github={repository,url:'https://github.com/'+repository};result.source.githubAssetId=latest.assetId;return result;
+  }
+  const imported=await github.download('https://github.com/'+repository+(source.github?.branch?'/tree/'+source.github.branch:''),path.join(app.getPath('userData'),'github-projects'));
+  const result=await openSourceDirectory(imported.root);if(result.ok)result.source.github=imported.github;return result;
+ }catch(e){return {ok:false,error:e.message}}finally{projectRefreshBusy=false;}
+});
 ipcMain.handle('apk:command',async(event,p)=>{if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false,error:'Origine APK refusée'};try{return {ok:true,...await apkEditor.command(p?.action,p?.payload)}}catch(e){return {ok:false,error:e.message}}});
 ipcMain.handle('android:open',async(event,options)=>{
  if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)return {ok:false};
