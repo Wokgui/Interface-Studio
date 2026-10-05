@@ -1,4 +1,10 @@
-# Interface Studio 6.89.0
+# Interface Studio 6.90.0
+
+## Nouveautés 6.90
+
+- Récupération d'une ancienne instance Studio qui ne répond plus : vérification de disponibilité, contrôle du nom de l'appareil virtuel, du PID et du chemin du SDK, puis redémarrage du processus bloqué. Aucun effacement de l'appareil virtuel ou de ses images de données.
+- Une instance récente dispose toujours du délai de démarrage normal ; une ancienne instance bloquée est détectée plus rapidement.
+- « Annuler le démarrage » est disponible pendant l'attente Android et reste autorisé pendant une opération de démarrage. La simulation locale reste accessible.
 
 ## Nouveautés 6.89
 
