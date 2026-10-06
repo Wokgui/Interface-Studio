@@ -160,6 +160,12 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
   const apkSha256=(digestText.match(/^([0-9a-f]{64})\b/i)||[])[1]?.toLowerCase()||'';
   return {serial:target,package:pkg,versionCode,versionName,api:Number(apiLevel.trim())||0,androidRelease:release.trim(),webViewPackage:current[1]||'',webViewVersion:current[2]||'',apkSha256};
  });
+ on('restart-installed',async p=>{
+  const target=await deviceAt(p.serial||serial),pkg=String(p.package||'');
+  if(!/^\w+(?:\.\w+)+$/.test(pkg))throw new Error('Package invalide');
+  const remote=await installedBase(pkg,target);if(!remote)throw new Error('Application absente de cet appareil');
+  packageName=pkg;await adb(['-s',target,'shell','am','force-stop',pkg]);return await launchCurrent(target);
+ });
  const keys={up:19,down:20,left:21,right:22,ok:23,back:4,home:3,menu:82,play:85,volumeUp:24,volumeDown:25};
  on('key',async p=>{const target=await deviceAt(p.serial||serial);if(!Object.hasOwn(keys,p.key))throw new Error('Touche invalide');await adb(['-s',target,'shell','input','keyevent',String(keys[p.key])]);return {};});
  on('pointer',async p=>{const target=await deviceAt(p.serial||serial),vals=[p.x,p.y,...(p.kind==='swipe'?[p.x2,p.y2]:[])];if(!vals.every(n=>Number.isInteger(n)&&n>=0&&n<=8192)||!['tap','swipe'].includes(p.kind))throw new Error('Coordonnées invalides');await adb(['-s',target,'shell','input',p.kind,...vals.map(String),...(p.kind==='swipe'?['350']:[])]);return {};});
