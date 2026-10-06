@@ -1,12 +1,12 @@
 {
   "name": "app-interface-studio",
-  "version": "7.02.3",
+  "version": "7.03.0",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "check": "node scripts/check.cjs && node scripts/test-phone-geometry.cjs && node scripts/test-phone-refresh.cjs && node scripts/test-visual-compare.cjs",
+    "check": "node scripts/check.cjs && node scripts/test-phone-geometry.cjs && node scripts/test-phone-refresh.cjs && node scripts/test-visual-compare.cjs && node scripts/test-professional-visual-validation.cjs",
     "smoke": "node scripts/run-smoke.cjs",
     "dist:win": "npm run icon && electron-builder --win portable",
     "icon": "node scripts/make-icon.cjs",
