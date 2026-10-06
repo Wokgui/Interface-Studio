@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const html=read('webapp/visual-editor.html'),workspace=read('webapp/studio-workspace.js'),phone=read('webapp/studio-phone.js'),native=read('webapp/studio-native-simulation.js'),validation=read('webapp/studio-visual-validation.js');
+const order=['studio-phone.js','studio-native-simulation.js','studio-workspace.js','studio-visual-validation.js'].map(x=>html.indexOf(x));
+assert(order.every(x=>x>=0));for(let i=1;i<order.length;i++)assert(order[i]>order[i-1],'professional rendering scripts must load in dependency order');
+assert(workspace.includes("window.StudioNativeSimulation?.setExternalMode?.(false,area)"));
+assert(!workspace.includes("button.textContent=enabled?(phoneActive?'Rendu téléphone exact"));
+assert(phone.includes('getSnapshot:()=>({canvas,profile:phoneProfile'));
+assert(native.includes('getSnapshot:()=>({canvas,profile:runtimeProfile'));
+assert(validation.includes("androidCommand('app-info'"));
+assert(validation.includes('StudioVisualCompare'));
+assert(validation.includes('restart-installed'));
+console.log('Professional visual validation: phone reference, independent Android runtime, same-build check and pixel comparison are wired.');
