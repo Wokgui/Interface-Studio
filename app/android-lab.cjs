@@ -54,16 +54,17 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  }
  async function studioSigningKey(){
   const dir=path.join(app.getPath('userData'),'signing');fs.mkdirSync(dir,{recursive:true});const ks=path.join(dir,'studio-android.keystore'),alias='studio',pass='ais-local-signing';
-  if(!fs.existsSync(ks))await run(keytoolPath(),['-genkeypair','-noprompt','-keystore',ks,'-storepass',pass,'-keypass',pass,'-alias',alias,'-keyalg','RSA','-keysize','2048','-validity','36500','-dname','CN=App Interface Studio, OU=Local, O=Wokgui, C=FR'],60000);
-  const out=await run(keytoolPath(),['-list','-v','-keystore',ks,'-storepass',pass,'-alias',alias],30000),digest=(out.match(/SHA256:\s*([0-9A-F:]+)/i)||[])[1]?.replace(/:/g,'').toLowerCase()||'';
-  if(!digest)throw Error('Impossible de lire la clé de signature locale de Studio.');
-  return {path:ks,alias,pass,digest};
+  if(fs.existsSync(ks))return {path:ks,alias,pass};
+  const debug=path.join(os.homedir(),'.android','debug.keystore');
+  if(fs.existsSync(debug))return {path:debug,alias:'androiddebugkey',pass:'android'};
+  await run(keytoolPath(),['-genkeypair','-noprompt','-keystore',ks,'-storepass',pass,'-keypass',pass,'-alias',alias,'-keyalg','RSA','-keysize','2048','-validity','36500','-dname','CN=App Interface Studio, OU=Local, O=Wokgui, C=FR'],60000);
+  return {path:ks,alias,pass};
  }
  async function signWithStudioKey(file){
   const key=await studioSigningKey(),out=path.join(path.dirname(file),crypto.randomUUID()+'-studio.apk');
   await run(buildTool('apksigner.bat'),['sign','--ks',key.path,'--ks-key-alias',key.alias,'--ks-pass','pass:'+key.pass,'--key-pass','pass:'+key.pass,'--out',out,file],120000);
-  const signed=await apkCert(out);if(signed!==key.digest){try{fs.unlinkSync(out)}catch{};throw Error('Signature locale Studio invalide.');}
-  return {file:out,key};
+  const digest=await apkCert(out);if(!digest){try{fs.unlinkSync(out)}catch{};throw Error('Signature locale Studio invalide.');}
+  return {file:out,key,digest};
  }
  async function appDataPath(pkg,target){
   const value=(await adb(['-s',target,'shell','run-as',pkg,'pwd'])).trim();
@@ -110,7 +111,7 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
   const api=Number((await adb(['-s',target,'shell','getprop','ro.build.version.sdk'])).trim());if(Number(selected.minApi)>api)throw new Error('API Android '+api+' insuffisante : APK exige '+selected.minApi);
   const signed=await signWithStudioKey(selected.stagedFile);let migration=null,result='',migrated=false;const present=await adb(['-s',target,'shell','pm','path',selected.package]).catch(()=>''),installed=/package:/.test(present)?await installedApkCert(selected.package,target):'';
   try{
-   if(installed&&installed!==signed.key.digest){
+   if(installed&&installed!==signed.digest){
     migration=await backupInstalledApp(selected.package,target);
     const removed=await adb(['-s',target,'uninstall',selected.package]);if(!/Success/.test(removed))throw Error('Désinstallation de migration refusée : '+removed);
     try{
