@@ -162,7 +162,9 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
   await device();if(!serial.startsWith('emulator-'))throw Error('Le changement de format automatique est réservé aux émulateurs.');
   const width=Math.round(Number(p.width)),height=Math.round(Number(p.height)),density=Number(p.density)||(selected?.tv?Math.min(240,Math.floor(1920/Math.max(width,height)*160)):320);
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<240||height<240||width>4096||height>4096||density<72||density>640)throw Error('Dimensions Android invalides (240 à 4096 pixels logiques).');
-  const factor=density/160;await adb(['-s',serial,'shell','wm','size',Math.round(width*factor)+'x'+Math.round(height*factor)]);await adb(['-s',serial,'shell','wm','density',String(density)]);
+  const factor=density/160,requestedPhysicalWidth=Number.isFinite(Number(p.physicalWidth))?Math.round(Number(p.physicalWidth)):Math.round(width*factor),requestedPhysicalHeight=Number.isFinite(Number(p.physicalHeight))?Math.round(Number(p.physicalHeight)):Math.round(height*factor);
+  if(requestedPhysicalWidth<240||requestedPhysicalHeight<240||requestedPhysicalWidth>8192||requestedPhysicalHeight>8192)throw Error('Résolution physique Android invalide.');
+  await adb(['-s',serial,'shell','wm','size',requestedPhysicalWidth+'x'+requestedPhysicalHeight]);await adb(['-s',serial,'shell','wm','density',String(density)]);
   const sizeReport=await adb(['-s',serial,'shell','wm','size']),densityReport=await adb(['-s',serial,'shell','wm','density']);const size=[...sizeReport.matchAll(/(?:Physical|Override) size: (\d+)x(\d+)/g)].at(-1),dpi=[...densityReport.matchAll(/(?:Physical|Override) density: (\d+)/g)].at(-1);if(!size||!dpi)throw Error('Dimensions réelles Android indisponibles.');
   const physicalWidth=Number(size[1]),physicalHeight=Number(size[2]),actualDensity=Number(dpi[1]),actualLogicalWidth=physicalWidth*160/actualDensity,actualLogicalHeight=physicalHeight*160/actualDensity;
   if(Math.abs(actualLogicalWidth-width)>2||Math.abs(actualLogicalHeight-height)>2)throw Error('Android ne peut pas appliquer ce format sur cet appareil virtuel. Choisir un autre format ou un appareil adapté.');
@@ -175,7 +177,7 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
   const profile=apk.tv?'tv':p.profile?.kind==='tablet'?'tablet':'phone';const settingsPath=path.join(app.getPath('userData'),'studio-android-devices.json');let saved={};try{saved=JSON.parse(fs.readFileSync(settingsPath,'utf8'));}catch{}const key=apk.package+'|'+image.id+'|'+profile+'|studio-683';
   let name=saved[key];if(!name||!avds().some(a=>a.name===name)){name=(await operations.get('create')({profile,image:image.id,nativeSimulator:true})).name;saved[key]=name;fs.writeFileSync(settingsPath,JSON.stringify(saved));}
   notify(event.sender,{stage:'boot',message:'Démarrage de '+(apk.tv?'Android TV':'Android')+'…'});const started=await operations.get('start')({name,headless:true});
-  await setGeometry({width:p.profile?.width|| (apk.tv?1280:412),height:p.profile?.height||(apk.tv?720:915)});
+  await setGeometry({width:p.profile?.width|| (apk.tv?1280:412),height:p.profile?.height||(apk.tv?720:915),density:p.profile?.density,physicalWidth:p.profile?.physicalWidth,physicalHeight:p.profile?.physicalHeight});
   notify(event.sender,{stage:'install',message:'Installation de l’application…'});const installed=await operations.get('install')({});await launchCurrent();const frame=await operations.get('frame')({});notify(event.sender,{stage:'running',message:'Application exécutée sur Android'});
   return {...started,package:apk.package,tv:apk.tv,frame,warnings:installed.warnings};
  });
