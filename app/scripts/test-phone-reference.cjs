@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const phone=read('webapp/studio-phone.js'),workspace=read('webapp/studio-workspace.js');
+assert(phone.includes('window.StudioWorkspace?.renderPhoneReference?.(canvas,w,h)'),'real phone frames must feed both left views');
+assert(phone.includes('window.StudioWorkspace?.setPhoneReference?.(true,true)'),'phone reference must activate automatically after connection');
+assert(phone.includes('window.StudioWorkspace?.setPhoneReference?.(false,true)'),'phone reference must deactivate on disconnect');
+assert(phone.includes('sendPointer'),'simulation reference must remain interactive through the real phone');
+assert(workspace.includes('Référence téléphone ✓'),'UI must expose the phone-reference state');
+assert(workspace.includes('studio-phone-reference-editor'),'editor must have an independent real-phone overlay');
+assert(workspace.includes('studio-phone-reference-simulation'),'simulation must have an independent real-phone overlay');
+assert(workspace.includes("setExactAndroid(false,true);setPhoneReference(true,true)"),'phone geometry sync must prefer real-phone reference, not a second rendering engine');
+assert(workspace.includes("if(enabled&&!skipPhone&&phoneReference)setPhoneReference(false,true)"),'real-phone reference and independent Android validation must remain mutually exclusive');
+console.log('Phone reference: editor and simulation use the same real frame, with interactive simulation and independent validation mode preserved.');
