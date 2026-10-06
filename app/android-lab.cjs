@@ -144,6 +144,22 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  on('launch',()=>launchCurrent());
  on('installed',async()=>{await device();const output=await adb(['-s',serial,'shell','pm','list','packages','-3']);return {packages:output.split(/\r?\n/).filter(v=>v.startsWith('package:')).map(v=>v.slice(8).trim())}});
  on('launch-installed',async p=>{const target=await deviceAt(p.serial||serial);if(typeof p.package!=='string'||!/^\w+(?:\.\w+)+$/.test(p.package))throw new Error('Package invalide');const list=await adb(['-s',target,'shell','pm','list','packages','-3']);if(!list.split(/\r?\n/).some(v=>v.trim()==='package:'+p.package))throw new Error('Application absente de cet appareil');packageName=p.package;return await launchCurrent(target)});
+ on('app-info',async p=>{
+  const target=await deviceAt(p.serial||serial),pkg=String(p.package||packageName||'');
+  if(!/^\w+(?:\.\w+)+$/.test(pkg))throw new Error('Package invalide');
+  const remote=await installedBase(pkg,target);if(!remote)throw new Error('Application absente de cet appareil');
+  const [dump,apiLevel,release,webview,digestText]=await Promise.all([
+   adb(['-s',target,'shell','dumpsys','package',pkg]),
+   adb(['-s',target,'shell','getprop','ro.build.version.sdk']),
+   adb(['-s',target,'shell','getprop','ro.build.version.release']),
+   adb(['-s',target,'shell','dumpsys','webviewupdate']).catch(()=>''),
+   adb(['-s',target,'shell','sha256sum',remote]).catch(()=>'')
+  ]);
+  const versionCode=(dump.match(/\bversionCode=(\d+)/)||[])[1]||'',versionName=(dump.match(/\bversionName=([^\s]+)/)||[])[1]||'';
+  const current=webview.match(/Current WebView package \(name, version\): \(([^,]+),\s*([^)]+)\)/i)||webview.match(/Current WebView package.*?:\s*([^\s]+)\s+([^\s]+)/i)||[];
+  const apkSha256=(digestText.match(/^([0-9a-f]{64})\b/i)||[])[1]?.toLowerCase()||'';
+  return {serial:target,package:pkg,versionCode,versionName,api:Number(apiLevel.trim())||0,androidRelease:release.trim(),webViewPackage:current[1]||'',webViewVersion:current[2]||'',apkSha256};
+ });
  const keys={up:19,down:20,left:21,right:22,ok:23,back:4,home:3,menu:82,play:85,volumeUp:24,volumeDown:25};
  on('key',async p=>{const target=await deviceAt(p.serial||serial);if(!Object.hasOwn(keys,p.key))throw new Error('Touche invalide');await adb(['-s',target,'shell','input','keyevent',String(keys[p.key])]);return {};});
  on('pointer',async p=>{const target=await deviceAt(p.serial||serial),vals=[p.x,p.y,...(p.kind==='swipe'?[p.x2,p.y2]:[])];if(!vals.every(n=>Number.isInteger(n)&&n>=0&&n<=8192)||!['tap','swipe'].includes(p.kind))throw new Error('Coordonnées invalides');await adb(['-s',target,'shell','input',p.kind,...vals.map(String),...(p.kind==='swipe'?['350']:[])]);return {};});
