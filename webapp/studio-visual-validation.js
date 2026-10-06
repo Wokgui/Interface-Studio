@@ -2,7 +2,7 @@
  'use strict';
  const api=window.AppInterfaceStudio,compareApi=window.StudioVisualCompare;
  if(!api||!compareApi)return;
- let enabled=false,timer=null,last=null,button,statusEl,dialog,phoneCanvas,simCanvas,diffCanvas,metaEl;
+ let enabled=false,timer=null,last=null,lastAutoAt=0,button,statusEl,dialog,phoneCanvas,simCanvas,diffCanvas,metaEl;
 
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const pct=n=>(n*100).toLocaleString('fr-FR',{minimumFractionDigits:n<.01?2:1,maximumFractionDigits:2})+' %';
@@ -73,7 +73,7 @@
   if(open&&!dialog.open){window.StudioChatGpt?.hideView?.(true);dialog.showModal();}
   return last;
  }
- function schedule(delay=1200){clearTimeout(timer);if(!enabled)return;timer=setTimeout(()=>validate({open:false}).catch(e=>setStatus('Validation impossible : '+e.message,'fail')),delay);}
+ function schedule(delay=1200){if(!enabled||timer)return;const wait=Math.max(delay,Math.max(0,3500-(Date.now()-lastAutoAt)));timer=setTimeout(()=>{timer=null;lastAutoAt=Date.now();validate({open:false}).catch(e=>setStatus('Validation impossible : '+e.message,'fail'));},wait);}
  function setEnabled(value){enabled=!!value;toolbar();button.disabled=!enabled;if(enabled){setStatus('Validation en attente des deux rendus','idle');schedule(1500);}else setStatus('Validation visuelle inactive','idle');}
  toolbar();setEnabled(!!window.StudioWorkspace?.isExactAndroid?.());
  window.StudioVisualValidation={validate,schedule,setEnabled,getLast:()=>last};
