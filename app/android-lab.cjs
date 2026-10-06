@@ -3,7 +3,7 @@ const {execFile,spawn}=require('child_process');
 const PROFILES={phone:{width:1080,height:1920,density:420},tablet:{width:1600,height:2560,density:320},tv:{width:1920,height:1080,density:240}};
 function emulatorStartArgs(p,port){return ['-avd',p.name,'-port',String(port),'-no-snapshot-load','-no-snapshot-save',...(p.graphics==='auto'?['-gpu','auto']:['-gpu','swiftshader','-feature','-Vulkan']),...(p.headless===true?['-no-window','-no-boot-anim']:[])];}
 function cleanEmulatorLog(text){return String(text).replace(/\x1b\[[0-9;]*m/g,'');}
-function run(file,args,timeout=30000,binary=false){return new Promise((resolve,reject)=>execFile(file,args,{shell:false,windowsHide:true,timeout,maxBuffer:16*1024*1024,encoding:binary?null:'utf8'},(error,stdout,stderr)=>{if(error)reject(new Error(String(stderr||stdout||error.message).slice(0,8000)));else resolve(stdout)}));}
+function run(file,args,timeout=30000,binary=false){return new Promise((resolve,reject)=>execFile(file,args,{shell:false,windowsHide:true,timeout,maxBuffer:(binary?512:16)*1024*1024,encoding:binary?null:'utf8'},(error,stdout,stderr)=>{if(error)reject(new Error(String(stderr||stdout||error.message).slice(0,8000)));else resolve(stdout)}));}
 function diagnose(message){const m=String(message);if(/multiple emulators with the same AVD/i.test(m))return 'Cet appareil Android est déjà utilisé par un autre émulateur. Android refuse une deuxième instance. Revenez à Simulation locale ou fermez l’autre fenêtre Android avant de réessayer.';if(/NO_MATCHING_ABIS/i.test(m))return 'Architecture incompatible : choisir une image système correspondant aux bibliothèques natives de cet APK. '+m;if(/OLDER_SDK/i.test(m))return 'API Android trop ancienne pour cet APK. '+m;if(/UPDATE_INCOMPATIBLE/i.test(m))return 'Mise à jour refusée : la signature APK diffère de celle de l’application installée. Les données sont conservées. Publier un APK signé avec la clé d’origine pour actualiser cet appareil. '+m;if(/MISSING_SPLIT/i.test(m))return 'APK incomplet : cette application exige plusieurs APK fractionnés. Sélectionner un APK autonome complet ; les archives APKS/XAPK ne sont pas installées par ce parcours. '+m;if(/MISSING_SHARED_LIBRARY/i.test(m))return 'Bibliothèque système requise absente (services Google ou matériel spécifique possibles). '+m;return m;}
 function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveApk=()=>{throw Error('Source APK indisponible.')}}){
  let sdk='',selected=null,serial='',packageName='',busy=false,mutationBusy=false,pendingStart=null;const mutations=new Set(['sdk','pick','create','start','connect','install','launch','stop','video-start','launch-installed']);const launched=new Set();
@@ -39,23 +39,52 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  function aapt(){return buildTool('aapt.exe');}
  function certDigest(text){return (String(text).match(/Signer #1 certificate SHA-256 digest:\s*([0-9a-f:]+)/i)||[])[1]?.replace(/:/g,'').toLowerCase()||'';}
  async function apkCert(file){try{return certDigest(await run(buildTool('apksigner.bat'),['verify','--print-certs',file],30000))}catch{return ''}}
- async function installedApkCert(pkg,target=serial){
+ async function installedBase(pkg,target=serial){
   const paths=(await adb(['-s',target,'shell','pm','path',pkg])).split(/\r?\n/).map(x=>x.replace(/^package:/,'').trim()).filter(Boolean);
-  const remote=paths.find(x=>/base\.apk$/i.test(x))||paths[0];if(!remote)return '';
+  return paths.find(x=>/base\.apk$/i.test(x))||paths[0]||'';
+ }
+ async function installedApkCert(pkg,target=serial){
+  const remote=await installedBase(pkg,target);if(!remote)return '';
   const dir=path.join(app.getPath('userData'),'android-apks');fs.mkdirSync(dir,{recursive:true});const local=path.join(dir,'installed-'+crypto.randomUUID()+'.apk');
   try{await run(tool('platform-tools/adb.exe'),['-s',target,'pull',remote,local],120000);return await apkCert(local)}finally{try{fs.unlinkSync(local)}catch{}}
  }
- async function localDebugKeyCert(){
-  const ks=path.join(os.homedir(),'.android','debug.keystore');if(!fs.existsSync(ks))return {path:'',digest:''};
-  try{const keytool=process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin','keytool.exe'):'keytool.exe';const out=await run(keytool,['-list','-v','-keystore',ks,'-storepass','android','-alias','androiddebugkey'],30000);const digest=(out.match(/SHA256:\s*([0-9A-F:]+)/i)||[])[1]?.replace(/:/g,'').toLowerCase()||'';return {path:ks,digest}}catch{return {path:ks,digest:''}}
+ function keytoolPath(){
+  const candidates=[process.env.JAVA_HOME&&path.join(process.env.JAVA_HOME,'bin','keytool.exe'),path.join(process.env.ProgramFiles||'C:\\Program Files','Android','Android Studio','jbr','bin','keytool.exe'),path.join(process.env['ProgramFiles(x86)']||'C:\\Program Files (x86)','Android','Android Studio','jbr','bin','keytool.exe')].filter(Boolean);
+  return candidates.find(fs.existsSync)||'keytool.exe';
  }
- async function resignForInstalledIdentity(file,pkg,target=serial){
-  const installed=await installedApkCert(pkg,target),incoming=await apkCert(file);if(!installed||!incoming||installed===incoming)return {file,changed:false,installed,incoming};
-  const local=await localDebugKeyCert();if(!local.digest||local.digest!==installed)return {file,changed:false,installed,incoming,local:local.digest||''};
-  const out=path.join(path.dirname(file),crypto.randomUUID()+'-resigned.apk');
-  await run(buildTool('apksigner.bat'),['sign','--ks',local.path,'--ks-key-alias','androiddebugkey','--ks-pass','pass:android','--key-pass','pass:android','--out',out,file],120000);
-  const signed=await apkCert(out);if(signed!==installed){try{fs.unlinkSync(out)}catch{};throw Error('La re-signature locale n’a pas produit la signature attendue.');}
-  return {file:out,changed:true,installed,incoming};
+ async function studioSigningKey(){
+  const dir=path.join(app.getPath('userData'),'signing');fs.mkdirSync(dir,{recursive:true});const ks=path.join(dir,'studio-android.keystore'),alias='studio',pass='ais-local-signing';
+  if(!fs.existsSync(ks))await run(keytoolPath(),['-genkeypair','-noprompt','-keystore',ks,'-storepass',pass,'-keypass',pass,'-alias',alias,'-keyalg','RSA','-keysize','2048','-validity','36500','-dname','CN=App Interface Studio, OU=Local, O=Wokgui, C=FR'],60000);
+  const out=await run(keytoolPath(),['-list','-v','-keystore',ks,'-storepass',pass,'-alias',alias],30000),digest=(out.match(/SHA256:\s*([0-9A-F:]+)/i)||[])[1]?.replace(/:/g,'').toLowerCase()||'';
+  if(!digest)throw Error('Impossible de lire la clé de signature locale de Studio.');
+  return {path:ks,alias,pass,digest};
+ }
+ async function signWithStudioKey(file){
+  const key=await studioSigningKey(),out=path.join(path.dirname(file),crypto.randomUUID()+'-studio.apk');
+  await run(buildTool('apksigner.bat'),['sign','--ks',key.path,'--ks-key-alias',key.alias,'--ks-pass','pass:'+key.pass,'--key-pass','pass:'+key.pass,'--out',out,file],120000);
+  const signed=await apkCert(out);if(signed!==key.digest){try{fs.unlinkSync(out)}catch{};throw Error('Signature locale Studio invalide.');}
+  return {file:out,key};
+ }
+ async function appDataPath(pkg,target){
+  const value=(await adb(['-s',target,'shell','run-as',pkg,'pwd'])).trim();
+  if(!/^\/data\/(?:user\/\d+|data)\/[A-Za-z0-9_.]+$/.test(value))throw Error('Sauvegarde privée impossible : cette application Android n’autorise pas run-as.');
+  return value;
+ }
+ async function backupInstalledApp(pkg,target){
+  const dir=path.join(app.getPath('userData'),'android-migrations');fs.mkdirSync(dir,{recursive:true});const id=crypto.randomUUID(),oldApk=path.join(dir,id+'-old.apk'),dataTar=path.join(dir,id+'-data.tar'),remote=await installedBase(pkg,target);
+  if(!remote)throw Error('APK installé introuvable.');
+  const dataPath=await appDataPath(pkg,target);
+  await run(tool('platform-tools/adb.exe'),['-s',target,'pull',remote,oldApk],120000);
+  const data=await run(tool('platform-tools/adb.exe'),['-s',target,'exec-out','run-as',pkg,'sh','-c','cd '+dataPath+' && tar -cf - .'],180000,true);
+  if(!Buffer.isBuffer(data)||data.length<1024)throw Error('Sauvegarde des données Android vide ou invalide.');
+  fs.writeFileSync(dataTar,data);
+  return {oldApk,dataTar,dataPath};
+ }
+ async function restoreAppData(pkg,target,dataTar){
+  const dataPath=await appDataPath(pkg,target),remote='/data/local/tmp/ais-'+crypto.randomUUID()+'.tar';
+  try{await run(tool('platform-tools/adb.exe'),['-s',target,'push',dataTar,remote],120000);await adb(['-s',target,'shell','chmod','644',remote]);await adb(['-s',target,'shell','run-as',pkg,'sh','-c','cd '+dataPath+' && tar -xf '+remote]);}finally{await adb(['-s',target,'shell','rm','-f',remote]).catch(()=>{})}
+ }
+ function cleanupMigration(m){for(const file of [m?.oldApk,m?.dataTar])if(file)try{fs.unlinkSync(file)}catch{}}
  }
  async function inspect(file){if(path.extname(file).toLowerCase()!=='.apk'||!fs.statSync(file).isFile()||fs.statSync(file).size>2*1024**3)throw new Error('Sélectionner un fichier APK valide de moins de 2 Go.');const info=await run(aapt(),['dump','badging',file]);const pkg=(info.match(/^package: name='([^']+)'/m)||[])[1];if(!pkg||!/^\w+(?:\.\w+)+$/.test(pkg))throw new Error('Identifiant Android invalide.');return {file,package:pkg,minApi:(info.match(/sdkVersion:'(\d+)'/)||[])[1],abis:(info.match(/native-code: (.+)/)||[])[1]||'Sans bibliothèque native déclarée',tv:/LEANBACK_LAUNCHER|leanback-launchable-activity|android.software.leanback/.test(info),requiredFeatures:[...info.matchAll(/^uses-feature: name='([^']+)'/gm)].map(m=>m[1]),activity:(info.match(/launchable-activity: name='([^']+)'/)||[])[1]||'',hash:await new Promise((resolve,reject)=>{const hash=crypto.createHash('sha256'),stream=fs.createReadStream(file);stream.on('data',chunk=>hash.update(chunk));stream.on('error',reject);stream.on('end',()=>resolve(hash.digest('hex')));})};}
  async function selectApk(file){detectSdk();const original=fs.realpathSync(file);if(path.extname(original).toLowerCase()!=='.apk'||!fs.statSync(original).isFile()||fs.statSync(original).size>2*1024**3)throw new Error('Sélectionner un fichier APK valide de moins de 2 Go.');const directory=path.join(app.getPath('userData'),'android-apks');fs.mkdirSync(directory,{recursive:true});const stagedFile=path.join(directory,crypto.randomUUID()+'.apk');await fs.promises.copyFile(original,stagedFile,fs.constants.COPYFILE_EXCL);try{const inspected=await inspect(stagedFile);if(selected?.stagedFile)try{fs.unlinkSync(selected.stagedFile)}catch{}selected={...inspected,file:original,stagedFile};packageName='';return {apk:{...selected,stagedFile:undefined}}}catch(error){try{fs.unlinkSync(stagedFile)}catch{}throw error}}
@@ -80,11 +109,26 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
   await deviceAt(target);if(!selected)throw new Error('Sélectionner un APK.');const current=await inspect(selected.stagedFile);if(current.hash!==selected.hash)throw new Error('Le fichier APK a changé : le sélectionner à nouveau.');
   const supported=(await adb(['-s',target,'shell','getprop','ro.product.cpu.abilist'])).trim().split(','),native=[...selected.abis.matchAll(/'([^']+)'/g)].map(m=>m[1]);if(native.length&&!native.some(abi=>supported.includes(abi)))throw new Error('Architecture incompatible : APK '+native.join(', ')+' ; appareil '+supported.join(', '));
   const api=Number((await adb(['-s',target,'shell','getprop','ro.build.version.sdk'])).trim());if(Number(selected.minApi)>api)throw new Error('API Android '+api+' insuffisante : APK exige '+selected.minApi);
-  let installFile=selected.stagedFile,resigned=null;const present=await adb(['-s',target,'shell','pm','path',selected.package]).catch(()=>'');
-  if(/package:/.test(present)){resigned=await resignForInstalledIdentity(selected.stagedFile,selected.package,target);if(resigned.changed)installFile=resigned.file;else if(resigned.installed&&resigned.incoming&&resigned.installed!==resigned.incoming)throw new Error('UPDATE_INCOMPATIBLE : la version installée utilise une autre clé. Studio a vérifié la clé debug locale de ce PC mais elle ne correspond pas à l’application installée. Aucune donnée n’a été supprimée.');}
-  let result;try{result=await run(tool('platform-tools/adb.exe'),['-s',target,'install','-r',installFile],120000)}finally{if(resigned?.changed)try{fs.unlinkSync(installFile)}catch{}}
-  if(!/Success/.test(result))throw new Error(result);packageName=selected.package;const featureText=await adb(['-s',target,'shell','pm','list','features']),missing=selected.requiredFeatures.filter(feature=>!featureText.includes('feature:'+feature));
-  return {message:result+(resigned?.changed?'\nAPK re-signé automatiquement avec la clé d’origine trouvée sur ce PC.':'')+(missing.length?'\nFonctions matérielles à vérifier : '+missing.join(', '):''),package:packageName,warnings:missing};
+  const signed=await signWithStudioKey(selected.stagedFile);let migration=null,result='',migrated=false;const present=await adb(['-s',target,'shell','pm','path',selected.package]).catch(()=>''),installed=/package:/.test(present)?await installedApkCert(selected.package,target):'';
+  try{
+   if(installed&&installed!==signed.key.digest){
+    migration=await backupInstalledApp(selected.package,target);
+    const removed=await adb(['-s',target,'uninstall',selected.package]);if(!/Success/.test(removed))throw Error('Désinstallation de migration refusée : '+removed);
+    try{
+     result=await run(tool('platform-tools/adb.exe'),['-s',target,'install',signed.file],120000);if(!/Success/.test(result))throw Error(result);
+     await restoreAppData(selected.package,target,migration.dataTar);migrated=true;
+    }catch(error){
+     await adb(['-s',target,'uninstall',selected.package]).catch(()=>{});
+     const rollback=await run(tool('platform-tools/adb.exe'),['-s',target,'install',migration.oldApk],120000).catch(()=> '');
+     if(/Success/.test(rollback))await restoreAppData(selected.package,target,migration.dataTar).catch(()=>{});
+     throw Error('Migration de signature annulée et ancienne application restaurée. '+error.message);
+    }
+   }else{
+    result=await run(tool('platform-tools/adb.exe'),['-s',target,'install','-r',signed.file],120000);if(!/Success/.test(result))throw Error(result);
+   }
+  }finally{try{fs.unlinkSync(signed.file)}catch{};cleanupMigration(migration)}
+  packageName=selected.package;const featureText=await adb(['-s',target,'shell','pm','list','features']),missing=selected.requiredFeatures.filter(feature=>!featureText.includes('feature:'+feature));
+  return {message:result+(migrated?'\nSignature migrée une fois vers la clé locale persistante de Studio ; données restaurées.':'\nAPK signé avec la clé locale persistante de Studio.')+(missing.length?'\nFonctions matérielles à vérifier : '+missing.join(', '):''),package:packageName,warnings:missing,migrated};
  }
  on('update-source',async p=>{
   const target=await deviceAt(p.serial||serial);if(target.startsWith('emulator-'))throw Error('Choisir un téléphone réel pour cette actualisation.');
