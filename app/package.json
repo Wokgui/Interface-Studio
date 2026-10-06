@@ -1,6 +1,6 @@
 {
   "name": "app-interface-studio",
-  "version": "7.02.1",
+  "version": "7.02.2",
   "private": true,
   "description": "Editeur visuel Windows et laboratoire APK Android",
   "main": "main.cjs",
