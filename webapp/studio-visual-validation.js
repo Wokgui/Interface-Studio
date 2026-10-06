@@ -17,9 +17,9 @@
  }
  function buildDialog(){
   dialog=document.createElement('dialog');dialog.id='studioVisualValidationDialog';dialog.className='studio-visual-dialog';
-  dialog.innerHTML='<form method="dialog"><header><h2>Validation visuelle téléphone ↔ Android</h2><button value="cancel" aria-label="Fermer">×</button></header><p class="studio-visual-note">Le téléphone est la référence. La simulation est le même APK exécuté dans Android. Pour un résultat exploitable, affichez le même écran et le même état dans les deux.</p><div class="studio-visual-meta"></div><div class="studio-visual-grid"><figure><figcaption>Téléphone réel</figcaption><canvas data-kind="phone"></canvas></figure><figure><figcaption>Simulation Android</figcaption><canvas data-kind="sim"></canvas></figure><figure><figcaption>Différences</figcaption><canvas data-kind="diff"></canvas></figure></div><footer><button value="cancel">Fermer</button><button type="button" id="studioVisualRunAgain">Comparer à nouveau</button></footer></form>';
+  dialog.innerHTML='<form method="dialog"><header><h2>Validation visuelle téléphone ↔ Android</h2><button value="cancel" aria-label="Fermer">×</button></header><p class="studio-visual-note">Le téléphone est la référence. La simulation exécute le même APK dans un vrai Android virtuel. La comparaison porte sur les pixels de la WebView, après normalisation de la densité et exclusion des barres système.</p><div class="studio-visual-meta"></div><div class="studio-visual-grid"><figure><figcaption>Téléphone réel</figcaption><canvas data-kind="phone"></canvas></figure><figure><figcaption>Simulation Android</figcaption><canvas data-kind="sim"></canvas></figure><figure><figcaption>Différences</figcaption><canvas data-kind="diff"></canvas></figure></div><footer><button value="cancel">Fermer</button><button type="button" id="studioVisualRestartCompare">Relancer les deux puis comparer</button><button type="button" id="studioVisualRunAgain">Comparer l’état actuel</button></footer></form>';
   document.body.append(dialog);phoneCanvas=dialog.querySelector('[data-kind="phone"]');simCanvas=dialog.querySelector('[data-kind="sim"]');diffCanvas=dialog.querySelector('[data-kind="diff"]');metaEl=dialog.querySelector('.studio-visual-meta');
-  dialog.querySelector('#studioVisualRunAgain').onclick=()=>validate({open:false});
+  dialog.querySelector('#studioVisualRunAgain').onclick=()=>validate({open:false});dialog.querySelector('#studioVisualRestartCompare').onclick=()=>restartAndValidate();
   dialog.addEventListener('close',()=>window.StudioChatGpt?.hideView?.(false));
  }
  function setStatus(text,state='idle'){toolbar();statusEl.textContent=text;statusEl.dataset.state=state;button.dataset.state=state;}
@@ -52,6 +52,18 @@
  }
  function envText(label,x){if(!x)return label+' : indisponible';return label+' : Android '+(x.androidRelease||x.api||'?')+' · WebView '+(x.webViewVersion||'?')+' · v'+(x.versionName||x.versionCode||'?');}
 
+ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ async function restartAndValidate(){
+  const phone=window.StudioPhone?.getSnapshot?.(),sim=window.StudioNativeSimulation?.getSnapshot?.(),source=window.StudioWorkspace?.getSource?.(),pkg=source?.apkProject?.package||source?.phone?.package||'';
+  if(!phone?.serial||!sim?.serial||!pkg){setStatus('Impossible de relancer les deux cibles','warn');return null;}
+  setStatus('Relance synchronisée des deux applications…','busy');
+  const results=await Promise.all([api.androidCommand('restart-installed',{serial:phone.serial,package:pkg}),api.androidCommand('restart-installed',{serial:sim.serial,package:pkg})]);
+  const failed=results.find(r=>!r?.ok);if(failed){setStatus('Relance impossible : '+failed.error,'fail');return null;}
+  await sleep(1200);
+  await Promise.all([window.StudioPhone?.captureNow?.(),window.StudioNativeSimulation?.captureNow?.()]);
+  await sleep(250);
+  return validate({open:false});
+ }
  async function validate({open=false}={}){
   toolbar();if(!enabled){setStatus('Active le rendu Android exact pour valider','idle');return null;}
   const phone=window.StudioPhone?.getSnapshot?.(),sim=window.StudioNativeSimulation?.getSnapshot?.();
@@ -76,5 +88,5 @@
  function schedule(delay=1200){if(!enabled||timer)return;const wait=Math.max(delay,Math.max(0,3500-(Date.now()-lastAutoAt)));timer=setTimeout(()=>{timer=null;lastAutoAt=Date.now();validate({open:false}).catch(e=>setStatus('Validation impossible : '+e.message,'fail'));},wait);}
  function setEnabled(value){enabled=!!value;toolbar();button.disabled=!enabled;if(enabled){setStatus('Validation en attente des deux rendus','idle');schedule(1500);}else setStatus('Validation visuelle inactive','idle');}
  toolbar();setEnabled(!!window.StudioWorkspace?.isExactAndroid?.());
- window.StudioVisualValidation={validate,schedule,setEnabled,getLast:()=>last};
+ window.StudioVisualValidation={validate,restartAndValidate,schedule,setEnabled,getLast:()=>last};
 })();
