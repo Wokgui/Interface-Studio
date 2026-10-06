@@ -20,7 +20,8 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  app.on?.('before-quit',()=>video.stop());
  app.on?.('before-quit',()=>{for(const id of launched){try{spawn(tool('platform-tools/adb.exe'),['-s',id,'emu','kill'],{shell:false,windowsHide:true,stdio:'ignore'}).unref();}catch{}}});
  ipcMain.on?.('android:video-ack',(event,p)=>{if(trusted(event)&&event.sender===videoOwner&&p&&Number.isInteger(p.id)&&Number.isInteger(p.sequence))video.ack(p.id,p.sequence)});
- const device=async()=>{if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(serial))throw new Error('Sélectionner un appareil Android connecté et autorisé.');const list=await adb(['devices']);if(!list.split(/\r?\n/).some(l=>l.trim()===serial+'\tdevice'))throw new Error('Appareil hors ligne ou non autorisé.');return serial};
+ const deviceAt=async requested=>{const target=String(requested||'');if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(target))throw new Error('Sélectionner un appareil Android connecté et autorisé.');const list=await adb(['devices']);if(!list.split(/\r?\n/).some(l=>l.trim()===target+'\tdevice'))throw new Error('Appareil hors ligne ou non autorisé.');return target};
+ const device=async()=>deviceAt(serial);
  const operations=new Map();
  const on=(name,fn)=>{operations.set(name,fn);ipcMain.handle('android:'+name,async(event,p={})=>{if(!trusted(event))return {ok:false,error:'Origine IPC refusée'};if(!p||typeof p!=='object'||Array.isArray(p))return {ok:false,error:'Paramètres invalides'};if(mutations.has(name)&&mutationBusy)return {ok:false,error:'Une opération Android est déjà en cours. Attendre sa fin.'};if(mutations.has(name))mutationBusy=true;try{if(['video-start','run-source'].includes(name))videoOwner=event.sender;return {ok:true,...await fn(p,event)}}catch(e){return {ok:false,error:diagnose(e.message)}}finally{if(mutations.has(name))mutationBusy=false}});};
  const avds=()=>{const dir=avdHome();if(!fs.existsSync(dir))return [];return fs.readdirSync(dir).filter(n=>n.endsWith('.ini')).map(n=>{const text=fs.readFileSync(path.join(dir,n),'utf8');const folder=(text.match(/^path=(.+)$/m)||[])[1]?.trim();let config='';try{config=fs.readFileSync(path.join(folder,'config.ini'),'utf8')}catch{}return {name:n.slice(0,-4),profile:/tv|television/i.test(config)?'tv':/tablet/i.test(config)?'tablet':'phone'};});};
@@ -38,18 +39,18 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  function aapt(){return buildTool('aapt.exe');}
  function certDigest(text){return (String(text).match(/Signer #1 certificate SHA-256 digest:\s*([0-9a-f:]+)/i)||[])[1]?.replace(/:/g,'').toLowerCase()||'';}
  async function apkCert(file){try{return certDigest(await run(buildTool('apksigner.bat'),['verify','--print-certs',file],30000))}catch{return ''}}
- async function installedApkCert(pkg){
-  const paths=(await adb(['-s',serial,'shell','pm','path',pkg])).split(/\r?\n/).map(x=>x.replace(/^package:/,'').trim()).filter(Boolean);
+ async function installedApkCert(pkg,target=serial){
+  const paths=(await adb(['-s',target,'shell','pm','path',pkg])).split(/\r?\n/).map(x=>x.replace(/^package:/,'').trim()).filter(Boolean);
   const remote=paths.find(x=>/base\.apk$/i.test(x))||paths[0];if(!remote)return '';
   const dir=path.join(app.getPath('userData'),'android-apks');fs.mkdirSync(dir,{recursive:true});const local=path.join(dir,'installed-'+crypto.randomUUID()+'.apk');
-  try{await run(tool('platform-tools/adb.exe'),['-s',serial,'pull',remote,local],120000);return await apkCert(local)}finally{try{fs.unlinkSync(local)}catch{}}
+  try{await run(tool('platform-tools/adb.exe'),['-s',target,'pull',remote,local],120000);return await apkCert(local)}finally{try{fs.unlinkSync(local)}catch{}}
  }
  async function localDebugKeyCert(){
   const ks=path.join(os.homedir(),'.android','debug.keystore');if(!fs.existsSync(ks))return {path:'',digest:''};
   try{const keytool=process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin','keytool.exe'):'keytool.exe';const out=await run(keytool,['-list','-v','-keystore',ks,'-storepass','android','-alias','androiddebugkey'],30000);const digest=(out.match(/SHA256:\s*([0-9A-F:]+)/i)||[])[1]?.replace(/:/g,'').toLowerCase()||'';return {path:ks,digest}}catch{return {path:ks,digest:''}}
  }
- async function resignForInstalledIdentity(file,pkg){
-  const installed=await installedApkCert(pkg),incoming=await apkCert(file);if(!installed||!incoming||installed===incoming)return {file,changed:false,installed,incoming};
+ async function resignForInstalledIdentity(file,pkg,target=serial){
+  const installed=await installedApkCert(pkg,target),incoming=await apkCert(file);if(!installed||!incoming||installed===incoming)return {file,changed:false,installed,incoming};
   const local=await localDebugKeyCert();if(!local.digest||local.digest!==installed)return {file,changed:false,installed,incoming,local:local.digest||''};
   const out=path.join(path.dirname(file),crypto.randomUUID()+'-resigned.apk');
   await run(buildTool('apksigner.bat'),['sign','--ks',local.path,'--ks-key-alias','androiddebugkey','--ks-pass','pass:android','--key-pass','pass:android','--out',out,file],120000);
@@ -75,32 +76,38 @@ function register({app,ipcMain,dialog,mainWindow,studioWindow=()=>null,resolveAp
  on('cancel-start',async()=>{if(pendingStart)pendingStart.cancelled=true;return {canceled:!!pendingStart};});
  on('connect',async p=>{await video.stop();serial=String(p.serial);await device();return {serial};});
  mutations.add('update-source');
+ async function installSelected(target){
+  await deviceAt(target);if(!selected)throw new Error('Sélectionner un APK.');const current=await inspect(selected.stagedFile);if(current.hash!==selected.hash)throw new Error('Le fichier APK a changé : le sélectionner à nouveau.');
+  const supported=(await adb(['-s',target,'shell','getprop','ro.product.cpu.abilist'])).trim().split(','),native=[...selected.abis.matchAll(/'([^']+)'/g)].map(m=>m[1]);if(native.length&&!native.some(abi=>supported.includes(abi)))throw new Error('Architecture incompatible : APK '+native.join(', ')+' ; appareil '+supported.join(', '));
+  const api=Number((await adb(['-s',target,'shell','getprop','ro.build.version.sdk'])).trim());if(Number(selected.minApi)>api)throw new Error('API Android '+api+' insuffisante : APK exige '+selected.minApi);
+  let installFile=selected.stagedFile,resigned=null;const present=await adb(['-s',target,'shell','pm','path',selected.package]).catch(()=>'');
+  if(/package:/.test(present)){resigned=await resignForInstalledIdentity(selected.stagedFile,selected.package,target);if(resigned.changed)installFile=resigned.file;else if(resigned.installed&&resigned.incoming&&resigned.installed!==resigned.incoming)throw new Error('UPDATE_INCOMPATIBLE : la version installée utilise une autre clé. Studio a vérifié la clé debug locale de ce PC mais elle ne correspond pas à l’application installée. Aucune donnée n’a été supprimée.');}
+  let result;try{result=await run(tool('platform-tools/adb.exe'),['-s',target,'install','-r',installFile],120000)}finally{if(resigned?.changed)try{fs.unlinkSync(installFile)}catch{}}
+  if(!/Success/.test(result))throw new Error(result);packageName=selected.package;const featureText=await adb(['-s',target,'shell','pm','list','features']),missing=selected.requiredFeatures.filter(feature=>!featureText.includes('feature:'+feature));
+  return {message:result+(resigned?.changed?'\nAPK re-signé automatiquement avec la clé d’origine trouvée sur ce PC.':'')+(missing.length?'\nFonctions matérielles à vérifier : '+missing.join(', '):''),package:packageName,warnings:missing};
+ }
  on('update-source',async p=>{
-  await device();if(serial.startsWith('emulator-'))throw Error('Choisir un téléphone réel pour cette actualisation.');
+  const target=await deviceAt(p.serial||serial);if(target.startsWith('emulator-'))throw Error('Choisir un téléphone réel pour cette actualisation.');
   const file=resolveApk(p.source,true),info=await inspect(file);
   if(p.source?.apkProject?.package&&info.package!==p.source.apkProject.package)throw Error('Package APK incohérent.');
   await selectApk(file);
-  const installed=await operations.get('install')({});
-  await adb(['-s',serial,'shell','am','force-stop',info.package]);await launchCurrent();
+  const installed=await installSelected(target);
+  await adb(['-s',target,'shell','am','force-stop',info.package]);await launchCurrent(target);
   return {...installed,updated:true};
  });
- on('install',async()=>{await device();if(!selected)throw new Error('Sélectionner un APK.');const current=await inspect(selected.stagedFile);if(current.hash!==selected.hash)throw new Error('Le fichier APK a changé : le sélectionner à nouveau.');const supported=(await adb(['-s',serial,'shell','getprop','ro.product.cpu.abilist'])).trim().split(',');const native=[...selected.abis.matchAll(/'([^']+)'/g)].map(m=>m[1]);if(native.length&&!native.some(abi=>supported.includes(abi)))throw new Error('Architecture incompatible : APK '+native.join(', ')+' ; appareil '+supported.join(', '));const api=Number((await adb(['-s',serial,'shell','getprop','ro.build.version.sdk'])).trim());if(Number(selected.minApi)>api)throw new Error('API Android '+api+' insuffisante : APK exige '+selected.minApi);
-  let installFile=selected.stagedFile,resigned=null;const present=await adb(['-s',serial,'shell','pm','path',selected.package]).catch(()=>'');
-  if(/package:/.test(present)){resigned=await resignForInstalledIdentity(selected.stagedFile,selected.package);if(resigned.changed)installFile=resigned.file;else if(resigned.installed&&resigned.incoming&&resigned.installed!==resigned.incoming)throw new Error('UPDATE_INCOMPATIBLE : la version installée utilise une autre clé. Studio a vérifié la clé debug locale de ce PC mais elle ne correspond pas à l’application installée. Aucune donnée n’a été supprimée.');}
-  let result;try{result=await run(tool('platform-tools/adb.exe'),['-s',serial,'install','-r',installFile],120000)}finally{if(resigned?.changed)try{fs.unlinkSync(installFile)}catch{}}
-  if(!/Success/.test(result))throw new Error(result);packageName=selected.package;const featureText=await adb(['-s',serial,'shell','pm','list','features']);const missing=selected.requiredFeatures.filter(feature=>!featureText.includes('feature:'+feature));return {message:result+(resigned?.changed?'\nAPK re-signé automatiquement avec la clé d’origine trouvée sur ce PC.':'')+(missing.length?'\nFonctions matérielles à vérifier : '+missing.join(', '):''),package:packageName,warnings:missing};});
- async function launchCurrent(){await device();if(!packageName)throw new Error('Installer l’APK sélectionné avant de lancer.');let component='';for(const category of ['android.intent.category.LEANBACK_LAUNCHER','android.intent.category.LAUNCHER']){const r=await adb(['-s',serial,'shell','cmd','package','resolve-activity','--brief','-a','android.intent.action.MAIN','-c',category,packageName]);component=r.split(/\r?\n/).find(s=>/^[\w.$]+\/[\w.$]+$/.test(s.trim()))?.trim()||'';if(component)break}if(!component)throw new Error('Aucune activité téléphone/TV lançable.');const result=await adb(['-s',serial,'shell','am','start','-W','-n',component]);if(/Error:|Exception/.test(result))throw new Error(result);return {message:result};}
- on('launch',launchCurrent);
+ on('install',async()=>installSelected(await device()));
+ async function launchCurrent(target=serial){await deviceAt(target);if(!packageName)throw new Error('Installer l’APK sélectionné avant de lancer.');let component='';for(const category of ['android.intent.category.LEANBACK_LAUNCHER','android.intent.category.LAUNCHER']){const r=await adb(['-s',target,'shell','cmd','package','resolve-activity','--brief','-a','android.intent.action.MAIN','-c',category,packageName]);component=r.split(/\r?\n/).find(s=>/^[\w.$]+\/[\w.$]+$/.test(s.trim()))?.trim()||'';if(component)break}if(!component)throw new Error('Aucune activité téléphone/TV lançable.');const result=await adb(['-s',target,'shell','am','start','-W','-n',component]);if(/Error:|Exception/.test(result))throw new Error(result);return {message:result};}
+ on('launch',()=>launchCurrent());
  on('installed',async()=>{await device();const output=await adb(['-s',serial,'shell','pm','list','packages','-3']);return {packages:output.split(/\r?\n/).filter(v=>v.startsWith('package:')).map(v=>v.slice(8).trim())}});
  on('launch-installed',async p=>{await device();if(typeof p.package!=='string'||!/^\w+(?:\.\w+)+$/.test(p.package))throw new Error('Package invalide');const list=await adb(['-s',serial,'shell','pm','list','packages','-3']);if(!list.split(/\r?\n/).some(v=>v.trim()==='package:'+p.package))throw new Error('Application absente de cet appareil');packageName=p.package;return await launchCurrent()});
  const keys={up:19,down:20,left:21,right:22,ok:23,back:4,home:3,menu:82,play:85,volumeUp:24,volumeDown:25};
- on('key',async p=>{await device();if(!Object.hasOwn(keys,p.key))throw new Error('Touche invalide');await adb(['-s',serial,'shell','input','keyevent',String(keys[p.key])]);return {};});
- on('pointer',async p=>{await device();const vals=[p.x,p.y,...(p.kind==='swipe'?[p.x2,p.y2]:[])];if(!vals.every(n=>Number.isInteger(n)&&n>=0&&n<=8192)||!['tap','swipe'].includes(p.kind))throw new Error('Coordonnées invalides');await adb(['-s',serial,'shell','input',p.kind,...vals.map(String),...(p.kind==='swipe'?['350']:[])]);return {};});
- on('text',async p=>{await device();if(typeof p.text!=='string'||! /^[a-zA-Z0-9 .,!?@_+-]{1,200}$/.test(p.text))throw new Error('Saisie limitée aux caractères latins simples, chiffres et ponctuation affichée (200 caractères).');await adb(['-s',serial,'shell','input','text',p.text.replace(/ /g,'%s')]);return {};});
- on('frame',async()=>{await device();const data=await run(tool('platform-tools/adb.exe'),['-s',serial,'exec-out','screencap','-p'],15000,true);if(data.length<24||data.readUInt32BE(0)!==0x89504e47)throw new Error('Capture Android invalide');return {url:'data:image/png;base64,'+data.toString('base64'),width:data.readUInt32BE(16),height:data.readUInt32BE(20)};});
+ on('key',async p=>{const target=await deviceAt(p.serial||serial);if(!Object.hasOwn(keys,p.key))throw new Error('Touche invalide');await adb(['-s',target,'shell','input','keyevent',String(keys[p.key])]);return {};});
+ on('pointer',async p=>{const target=await deviceAt(p.serial||serial),vals=[p.x,p.y,...(p.kind==='swipe'?[p.x2,p.y2]:[])];if(!vals.every(n=>Number.isInteger(n)&&n>=0&&n<=8192)||!['tap','swipe'].includes(p.kind))throw new Error('Coordonnées invalides');await adb(['-s',target,'shell','input',p.kind,...vals.map(String),...(p.kind==='swipe'?['350']:[])]);return {};});
+ on('text',async p=>{const target=await deviceAt(p.serial||serial);if(typeof p.text!=='string'||! /^[a-zA-Z0-9 .,!?@_+-]{1,200}$/.test(p.text))throw new Error('Saisie limitée aux caractères latins simples, chiffres et ponctuation affichée (200 caractères).');await adb(['-s',target,'shell','input','text',p.text.replace(/ /g,'%s')]);return {};});
+ on('frame',async p=>{const target=await deviceAt(p.serial||serial);const data=await run(tool('platform-tools/adb.exe'),['-s',target,'exec-out','screencap','-p'],15000,true);if(data.length<24||data.readUInt32BE(0)!==0x89504e47)throw new Error('Capture Android invalide');return {url:'data:image/png;base64,'+data.toString('base64'),width:data.readUInt32BE(16),height:data.readUInt32BE(20)};});
  on('capture',async()=>{await device();const r=await dialog.showSaveDialog({defaultPath:'android-'+Date.now()+'.png',filters:[{name:'Capture PNG',extensions:['png']}]});if(r.canceled)return {canceled:true};const data=await run(tool('platform-tools/adb.exe'),['-s',serial,'exec-out','screencap','-p'],15000,true);fs.writeFileSync(r.filePath,data);return {path:r.filePath};});
  on('logs',async()=>{await device();let pid='';if(packageName)try{pid=(await adb(['-s',serial,'shell','pidof',packageName])).trim().split(/\s+/)[0]}catch{}const errors=await adb(['-s',serial,'logcat','-d','-t','250',...(/^\d+$/.test(pid)?['--pid='+pid]:[]),'*:E']);return {message:(/^\d+$/.test(pid)?'Erreurs de '+packageName+' (PID '+pid+') :\n':'Erreurs système / applications :\n')+(errors||'Aucune erreur dans les 250 dernières lignes. Les services Google et le matériel virtuel doivent être vérifiés dans le fonctionnement réel.')};});
- on('video-start',async p=>{await device();if(!['balanced','native'].includes(p.quality))throw new Error('Qualité vidéo invalide');return await video.start(serial,p.quality)});
+ on('video-start',async p=>{const target=await deviceAt(p.serial||serial);if(!['balanced','native'].includes(p.quality))throw new Error('Qualité vidéo invalide');return await video.start(target,p.quality)});
  on('video-stop',async()=>{await video.stop();return {}});
  on('stop',async()=>{await video.stop();await device();if(!launched.has(serial))throw new Error('Studio ferme uniquement les émulateurs démarrés ici.');await adb(['-s',serial,'emu','kill']);launched.delete(serial);serial='';return {};});
  mutations.add('prepare-install');mutations.add('run-source');mutations.add('resize');mutations.add('import-media');
