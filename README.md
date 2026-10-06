@@ -1,4 +1,13 @@
-# Interface Studio 6.95.0
+# Interface Studio 6.99.0
+
+## Nouvelle méthode de correspondance avec le téléphone réel
+
+La géométrie des deux vues PC n'est plus calculée à partir d'une estimation des barres Android. Quand un téléphone est connecté, Studio lit directement avec Android les limites du **WebView réellement affiché** par l'application et en déduit la zone de contenu exacte, les marges haute/basse/gauche/droite et le mode de navigation.
+
+Éditeur et Simulation utilisent alors cette même zone mesurée. Le panneau Téléphone réel reste la référence et ne reçoit aucune commande de redimensionnement. Si Android ne fournit pas le WebView, Studio revient explicitement à la mesure système de secours au lieu de prétendre à une correspondance exacte.
+
+Le statut du panneau Téléphone réel indique désormais la taille de l'écran, la taille de la zone d'application et si la mesure provient du WebView réel ou du mode de secours.
+
 
 ## Nouveautés 6.95
 
